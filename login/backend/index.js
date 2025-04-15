@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const authRoutes = require('./Routes/AuthRouter'); // User-related routes
 const bookingRoutes = require('./Routes/bookings'); // Booking-related routes
+const notificationRoutes = require('./Routes/notifications'); // Notification-related routes
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(cors());
 // Routes
 app.use('/api/auth', authRoutes); // Register user-related routes
 app.use('/api/bookings', bookingRoutes); // Register booking-related routes
+app.use('/api/notifications', notificationRoutes); // Add notifications routes
 
 // Connect to MongoDB
 mongoose

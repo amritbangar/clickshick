@@ -60,6 +60,44 @@ router.get('/photographers', async (req, res) => {
     }
 });
 
+// Fetch a single user by ID
+router.get('/users/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const user = await User.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.status(200).json(user);
+    } catch (error) {
+        console.error('Error fetching user by ID:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Fetch a single photographer by ID
+router.get('/photographers/:photographerId', async (req, res) => {
+    try {
+        const { photographerId } = req.params;
+        const photographer = await User.findById(photographerId);
+        
+        if (!photographer) {
+            return res.status(404).json({ message: 'Photographer not found' });
+        }
+        
+        if (photographer.category !== 'photographer') {
+            return res.status(400).json({ message: 'User is not a photographer' });
+        }
+        
+        res.status(200).json(photographer);
+    } catch (error) {
+        console.error('Error fetching photographer by ID:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Sign Up Route
 router.post('/signup', async (req, res) => {
     const { name, email, password, category } = req.body;
