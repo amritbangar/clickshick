@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .result {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        pre {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 10px;
+            overflow: auto;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0069d9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Backend Connection Test</h1>
+    
+    <button id="testUsers">Test Get Users</button>
+    <button id="testPhotographers">Test Get Photographers</button>
+    <button id="testLogin">Test Login</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        // Helper function to append results
+        function addResult(message, isSuccess, data) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const messageElement = document.createElement('p');
+            messageElement.textContent = `[${timestamp}] ${message}`;
+            resultDiv.appendChild(messageElement);
+            
+            if (data) {
+                const dataElement = document.createElement('pre');
+                dataElement.textContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+                resultDiv.appendChild(dataElement);
+            }
+            
+            resultsDiv.prepend(resultDiv);
+        }
+        
+        // Test GET /api/auth/users
+        document.getElementById('testUsers').addEventListener('click', async () => {
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/users');
+                const data = await response.json();
+                
+                addResult(
+                    `GET /api/auth/users - Status: ${response.status} ${response.ok ? 'OK' : 'Failed'}`,
+                    response.ok,
+                    data
+                );
+            } catch (error) {
+                addResult(`GET /api/auth/users - Error: ${error.message}`, false);
+            }
+        });
+        
+        // Test GET /api/auth/photographers
+        document.getElementById('testPhotographers').addEventListener('click', async () => {
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/photographers');
+                const data = await response.json();
+                
+                addResult(
+                    `GET /api/auth/photographers - Status: ${response.status} ${response.ok ? 'OK' : 'Failed'}`,
+                    response.ok,
+                    data
+                );
+            } catch (error) {
+                addResult(`GET /api/auth/photographers - Error: ${error.message}`, false);
+            }
+        });
+        
+        // Test POST /api/auth/login
+        document.getElementById('testLogin').addEventListener('click', async () => {
+            try {
+                const testCredentials = {
+                    email: 'test@example.com',
+                    password: 'password123'
+                };
+                
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testCredentials)
+                });
+                
+                const data = await response.json();
+                
+                addResult(
+                    `POST /api/auth/login - Status: ${response.status} ${response.ok ? 'OK' : 'Failed'}`,
+                    response.ok,
+                    data
+                );
+            } catch (error) {
+                addResult(`POST /api/auth/login - Error: ${error.message}`, false);
+            }
+        });
+    </script>
+</body>
+</html> 

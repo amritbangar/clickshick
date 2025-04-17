@@ -160,11 +160,84 @@ router.post('/login', async (req, res) => {
             { expiresIn: '1h' }
         );
 
-        console.log('Login successful:', { token, userId: user._id, category: user.category });
-        res.status(200).json({ token, userId: user._id, category: user.category });
+        // Get user data (without password) to send back
+        const userData = {
+            name: user.name,
+            email: user.email
+        };
+
+        console.log('Login successful:', { 
+            token, 
+            userId: user._id, 
+            category: user.category,
+            userData
+        });
+        
+        res.status(200).json({ 
+            token, 
+            userId: user._id.toString(), 
+            category: user.category,
+            userData,
+            message: 'Login successful' 
+        });
     } catch (error) {
         console.error('Server error during login:', error.message); // Log the exact error message
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Create Test User Route (for development purposes only)
+router.post('/create-test-users', async (req, res) => {
+    try {
+        console.log('Creating test users for development...');
+        
+        // Check if test users already exist
+        const existingUser = await User.findOne({ email: 'test@example.com' });
+        const existingPhotographer = await User.findOne({ email: 'photographer@example.com' });
+        
+        let createdUsers = [];
+        
+        // Create test user if it doesn't exist
+        if (!existingUser) {
+            const testUser = new User({
+                name: 'Test User',
+                email: 'test@example.com',
+                password: 'password123',
+                category: 'user'
+            });
+            
+            await testUser.save();
+            createdUsers.push('test@example.com (user)');
+            console.log('Created test user: test@example.com');
+        } else {
+            console.log('Test user already exists: test@example.com');
+        }
+        
+        // Create test photographer if it doesn't exist
+        if (!existingPhotographer) {
+            const testPhotographer = new User({
+                name: 'Test Photographer',
+                email: 'photographer@example.com',
+                password: 'password123',
+                category: 'photographer'
+            });
+            
+            await testPhotographer.save();
+            createdUsers.push('photographer@example.com (photographer)');
+            console.log('Created test photographer: photographer@example.com');
+        } else {
+            console.log('Test photographer already exists: photographer@example.com');
+        }
+        
+        return res.status(200).json({
+            message: createdUsers.length > 0 
+                ? `Created test users: ${createdUsers.join(', ')}` 
+                : 'Test users already exist',
+            usersCreated: createdUsers.length
+        });
+    } catch (error) {
+        console.error('Error creating test users:', error.message);
+        return res.status(500).json({ message: 'Server error during test user creation' });
     }
 });
 

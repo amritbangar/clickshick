@@ -10,7 +10,8 @@ const steps = [
     { title: "📞 Step 5: Enter Your Contact Number", key: "contactNumber", type: "text" },
     { title: "✅ Step 6: Final Decision", key: "decision", options: ["Likely", "Not Sure", "Confirmed"] },
     { title: "📍 Step 7: Enter Your Location", key: "location", type: "text" },
-    { title: "🎉 Step 8: Thank You! Your booking is saved." }
+    { title: "🏠 Step 8: Enter Your PIN Code", key: "pinCode", type: "pin" },
+    { title: "🎉 Step 9: Thank You! Your booking is saved." }
 ];
 
 function PhotographerPopup({ onClose, onSubmit }) {
@@ -25,6 +26,24 @@ function PhotographerPopup({ onClose, onSubmit }) {
         if (currentStep < steps.length - 1 && !formData[currentField] && currentField) {
             setError("Please fill out this field before continuing.");
             return;
+        }
+        
+        // Additional validation for PIN code
+        if (currentField === 'pinCode' && formData.pinCode) {
+            const pinCodePattern = /^\d{6}$/;  // 6-digit PIN code
+            if (!pinCodePattern.test(formData.pinCode)) {
+                setError("Please enter a valid 6-digit PIN code.");
+                return;
+            }
+        }
+        
+        // Additional validation for contact number
+        if (currentField === 'contactNumber' && formData.contactNumber) {
+            const contactNumberPattern = /^\d{10}$/;  // 10-digit contact number
+            if (!contactNumberPattern.test(formData.contactNumber)) {
+                setError("Please enter a valid 10-digit contact number.");
+                return;
+            }
         }
         
         setError("");
@@ -51,6 +70,16 @@ function PhotographerPopup({ onClose, onSubmit }) {
     };
 
     const handleChange = (key, value) => {
+        // For pin code, only allow numbers and limit to 6 digits
+        if (key === 'pinCode') {
+            value = value.replace(/\D/g, '').slice(0, 6);
+        }
+        
+        // For contact number, only allow numbers and limit to 10 digits
+        if (key === 'contactNumber') {
+            value = value.replace(/\D/g, '').slice(0, 10);
+        }
+        
         setFormData({ ...formData, [key]: value });
         setError("");
     };
@@ -96,13 +125,49 @@ function PhotographerPopup({ onClose, onSubmit }) {
                         onChange={(e) => handleChange(steps[currentStep].key, e.target.value)} 
                         value={formData[steps[currentStep].key] || ""}
                     />
+                ) : steps[currentStep].type === "pin" ? (
+                    <div>
+                        <input
+                            type="text"
+                            placeholder="Enter 6-digit PIN code for your area"
+                            onChange={(e) => handleChange(steps[currentStep].key, e.target.value)}
+                            value={formData[steps[currentStep].key] || ""}
+                            maxLength={6}
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            style={{ marginBottom: '8px' }}
+                        />
+                        <p style={{ fontSize: '0.85rem', color: '#6c757d', margin: '0' }}>
+                            <i className="fas fa-info-circle mr-1"></i> PIN code helps photographers find sessions in their area
+                        </p>
+                    </div>
                 ) : steps[currentStep].type === "text" ? (
-                    <input
-                        type="text"
-                        placeholder={steps[currentStep].key === "contactNumber" ? "Enter your contact number" : "Enter location"}
-                        onChange={(e) => handleChange(steps[currentStep].key, e.target.value)}
-                        value={formData[steps[currentStep].key] || ""}
-                    />
+                    <div>
+                        {steps[currentStep].key === "contactNumber" ? (
+                            <>
+                                <input
+                                    type="text"
+                                    placeholder="Enter your 10-digit contact number"
+                                    onChange={(e) => handleChange(steps[currentStep].key, e.target.value)}
+                                    value={formData[steps[currentStep].key] || ""}
+                                    maxLength={10}
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    style={{ marginBottom: '8px' }}
+                                />
+                                <p style={{ fontSize: '0.85rem', color: '#6c757d', margin: '0' }}>
+                                    <i className="fas fa-info-circle mr-1"></i> Please enter a valid 10-digit mobile number
+                                </p>
+                            </>
+                        ) : (
+                            <input
+                                type="text"
+                                placeholder="Enter location"
+                                onChange={(e) => handleChange(steps[currentStep].key, e.target.value)}
+                                value={formData[steps[currentStep].key] || ""}
+                            />
+                        )}
+                    </div>
                 ) : null}
 
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>

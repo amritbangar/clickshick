@@ -1,8 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import '../styles/reset.css';
 
 const Signup = () => {
+    // Add useEffect for custom scrollbar
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            .signup-container {
+                height: 100vh;
+                overflow-y: auto;
+                scroll-behavior: smooth;
+            }
+            
+            .signup-container::-webkit-scrollbar {
+                width: 10px;
+            }
+            
+            .signup-container::-webkit-scrollbar-track {
+                background: rgba(18, 22, 57, 0.1);
+                border-radius: 10px;
+            }
+            
+            .signup-container::-webkit-scrollbar-thumb {
+                background: var(--accent-color-1);
+                border-radius: 10px;
+                border: 2px solid rgba(18, 22, 57, 0.1);
+            }
+            
+            .signup-container::-webkit-scrollbar-thumb:hover {
+                background: #FFC107;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -11,7 +48,54 @@ const Signup = () => {
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const navigate = useNavigate();
+    
+    // Check for existing session on component mount
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        const category = localStorage.getItem('userCategory');
+        
+        // If all required auth items exist, redirect to appropriate dashboard
+        if (token && userId && category) {
+            console.log('Found existing session, redirecting to dashboard');
+            
+            // Redirect to the appropriate dashboard
+            if (category === 'photographer') {
+                navigate('/photographer-dashboard');
+            } else {
+                navigate('/user-dashboard');
+            }
+        }
+    }, [navigate]);
+
+    // Add fullscreen toggle function
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+            setIsFullscreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+    };
+
+    // Listen for fullscreen changes
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        };
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -37,7 +121,7 @@ const Signup = () => {
                 name,
                 email,
                 password,
-                category 
+                category
             });
 
             console.log("Registration response:", response.data);
@@ -70,20 +154,47 @@ const Signup = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, #f8f9fa 0%, #e2e6ea 100%)',
-            padding: '20px'
+            background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color-1) 100%)',
+            padding: '20px',
+            position: 'relative'
         }}>
+            {/* Fullscreen button */}
+            <div 
+                onClick={toggleFullscreen}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: 'white',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 100
+                }}
+                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            >
+                <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
+            </div>
+            
             <div className="signup-card" style={{
                 width: '100%',
                 maxWidth: '500px',
-                backgroundColor: '#fff',
+                maxHeight: '90vh', // Set max height to enable scrolling
+                backgroundColor: 'var(--accent-color-2)',
                 borderRadius: '15px',
-                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-                overflow: 'hidden'
+                boxShadow: 'var(--shadow-lg)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
             }}>
                 <div className="signup-header" style={{
-                    background: '#6200ea',
-                    color: 'white',
+                    background: 'var(--primary-color)',
+                    color: 'var(--accent-color-2)',
                     padding: '30px 25px',
                     textAlign: 'center',
                     borderTopLeftRadius: '15px',
@@ -93,31 +204,54 @@ const Signup = () => {
                         <i className="fas fa-user-plus mr-2"></i>
                         Create Account
                     </h1>
-                    <p className="mt-2 mb-0">Join Photography Portal today</p>
+                    <p className="mt-2 mb-0">Join clickshick.com today</p>
                 </div>
 
-                <div className="signup-body" style={{ padding: '30px 25px' }}>
+                <div className="signup-body scrollable" style={{ 
+                    padding: '30px 25px',
+                    overflowY: 'auto', // Enable vertical scrolling
+                    flex: 1, // Take remaining space
+                    maxHeight: 'calc(90vh - 100px)', // Subtract header height
+                    scrollbarWidth: 'thin', // For Firefox
+                    scrollbarColor: 'rgba(18, 22, 57, 0.4) rgba(0, 0, 0, 0.05)' // For Firefox
+                }}>
                     {error && (
-                        <div className="alert alert-danger" role="alert">
+                        <div style={{
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            color: 'var(--error-color)',
+                            padding: '12px 15px',
+                            borderRadius: '5px',
+                            marginBottom: '20px',
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}>
                             <i className="fas fa-exclamation-circle mr-2"></i> {error}
                         </div>
                     )}
 
                     {message && (
-                        <div className="alert alert-success" role="alert">
+                        <div style={{
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            color: 'var(--success-color)',
+                            padding: '12px 15px',
+                            borderRadius: '5px',
+                            marginBottom: '20px',
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}>
                             <i className="fas fa-check-circle mr-2"></i> {message}
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit}>
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: '#495057', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
                                 Full Name
                             </label>
                             <div className="input-group" style={{ display: 'flex', width: '100%' }}>
                                 <div style={{ 
-                                    background: '#f8f9fa', 
-                                    border: '1px solid #ced4da', 
+                                    background: 'rgba(0, 0, 0, 0.05)', 
+                                    border: `1px solid var(--border-color)`, 
                                     borderRight: 'none',
                                     borderRadius: '5px 0 0 5px', 
                                     display: 'flex', 
@@ -126,13 +260,13 @@ const Signup = () => {
                                     width: '46px',
                                     height: '46px'
                                 }}>
-                                    <i className="fas fa-user" style={{ color: '#6c757d' }}></i>
+                                    <i className="fas fa-user" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
                                 <input
                                     type="text"
                                     style={{ 
                                         padding: '12px 15px',
-                                        border: '1px solid #ced4da',
+                                        border: `1px solid var(--border-color)`,
                                         borderLeft: 'none',
                                         borderRadius: '0 5px 5px 0',
                                         flex: '1',
@@ -148,13 +282,13 @@ const Signup = () => {
                         </div>
 
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: '#495057', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
                                 Email Address
                             </label>
                             <div className="input-group" style={{ display: 'flex', width: '100%' }}>
                                 <div style={{ 
-                                    background: '#f8f9fa', 
-                                    border: '1px solid #ced4da', 
+                                    background: 'rgba(0, 0, 0, 0.05)', 
+                                    border: `1px solid var(--border-color)`, 
                                     borderRight: 'none',
                                     borderRadius: '5px 0 0 5px', 
                                     display: 'flex', 
@@ -163,13 +297,13 @@ const Signup = () => {
                                     width: '46px',
                                     height: '46px'
                                 }}>
-                                    <i className="fas fa-envelope" style={{ color: '#6c757d' }}></i>
+                                    <i className="fas fa-envelope" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
                                 <input
                                     type="email"
                                     style={{ 
                                         padding: '12px 15px',
-                                        border: '1px solid #ced4da',
+                                        border: `1px solid var(--border-color)`,
                                         borderLeft: 'none',
                                         borderRadius: '0 5px 5px 0',
                                         flex: '1',
@@ -185,13 +319,13 @@ const Signup = () => {
                         </div>
 
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: '#495057', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
                                 Password
                             </label>
                             <div className="input-group" style={{ display: 'flex', width: '100%' }}>
                                 <div style={{ 
-                                    background: '#f8f9fa', 
-                                    border: '1px solid #ced4da', 
+                                    background: 'rgba(0, 0, 0, 0.05)', 
+                                    border: `1px solid var(--border-color)`, 
                                     borderRight: 'none',
                                     borderRadius: '5px 0 0 5px', 
                                     display: 'flex', 
@@ -200,13 +334,13 @@ const Signup = () => {
                                     width: '46px',
                                     height: '46px'
                                 }}>
-                                    <i className="fas fa-lock" style={{ color: '#6c757d' }}></i>
+                                    <i className="fas fa-lock" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
                                 <input
                                     type="password"
                                     style={{ 
                                         padding: '12px 15px',
-                                        border: '1px solid #ced4da',
+                                        border: `1px solid var(--border-color)`,
                                         borderLeft: 'none',
                                         borderRadius: '0 5px 5px 0',
                                         flex: '1',
@@ -219,17 +353,19 @@ const Signup = () => {
                                     required
                                 />
                             </div>
-                            <small className="form-text text-muted">Password must be at least 4 characters long</small>
+                            <small style={{ color: 'var(--text-light)', fontSize: '12px', marginTop: '5px', display: 'block' }}>
+                                Password must be at least 4 characters long
+                            </small>
                         </div>
 
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: '#495057', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
                                 Confirm Password
                             </label>
                             <div className="input-group" style={{ display: 'flex', width: '100%' }}>
                                 <div style={{ 
-                                    background: '#f8f9fa', 
-                                    border: '1px solid #ced4da', 
+                                    background: 'rgba(0, 0, 0, 0.05)', 
+                                    border: `1px solid var(--border-color)`, 
                                     borderRight: 'none',
                                     borderRadius: '5px 0 0 5px', 
                                     display: 'flex', 
@@ -238,13 +374,13 @@ const Signup = () => {
                                     width: '46px',
                                     height: '46px'
                                 }}>
-                                    <i className="fas fa-lock" style={{ color: '#6c757d' }}></i>
+                                    <i className="fas fa-lock" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
                                 <input
                                     type="password"
                                     style={{ 
                                         padding: '12px 15px',
-                                        border: '1px solid #ced4da',
+                                        border: `1px solid var(--border-color)`,
                                         borderLeft: 'none',
                                         borderRadius: '0 5px 5px 0',
                                         flex: '1',
@@ -260,136 +396,102 @@ const Signup = () => {
                         </div>
 
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: '#495057', marginBottom: '8px', display: 'block', fontSize: '16px' }}>
+                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
                                 Account Type
                             </label>
                             <div style={{ 
-                                display: 'flex', 
-                                width: '100%', 
-                                marginTop: '10px', 
-                                borderRadius: '5px',
-                                padding: '5px'
+                                display: 'flex',
+                                gap: '20px'
                             }}>
-                                <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    marginRight: '20px',
-                                    padding: '8px 15px',
+                                <label style={{ 
+                                    display: 'flex',
+                                    alignItems: 'center',
                                     cursor: 'pointer',
-                                    backgroundColor: category === 'user' ? '#f0e6ff' : 'transparent',
+                                    flexGrow: 1,
+                                    padding: '15px',
+                                    border: `1px solid ${category === 'user' ? 'var(--accent-color-1)' : 'var(--border-color)'}`,
                                     borderRadius: '5px',
-                                    border: category === 'user' ? '1px solid #6200ea' : '1px solid #ced4da' 
-                                }} onClick={() => setCategory('user')}>
-                                    <input 
-                                        type="radio" 
-                                        id="userRadio" 
+                                    backgroundColor: category === 'user' ? 'rgba(255, 165, 0, 0.1)' : 'transparent'
+                                }}>
+                                    <input
+                                        type="radio"
                                         name="category"
-                                        style={{ marginRight: '10px', transform: 'scale(1.2)', cursor: 'pointer' }}
+                                        value="user"
                                         checked={category === 'user'}
                                         onChange={() => setCategory('user')}
+                                        style={{ marginRight: '10px' }}
                                     />
-                                    <label htmlFor="userRadio" style={{ margin: 0, fontSize: '16px', cursor: 'pointer' }}>
-                                        <i className="fas fa-user mr-2" style={{ color: '#6200ea' }}></i> User
-                                    </label>
-                                </div>
-                                <div style={{ 
-                                    display: 'flex', 
+                                    <div>
+                                        <strong style={{ color: 'var(--primary-color)' }}>Client</strong>
+                                        <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: 'var(--text-light)' }}>
+                                            I want to hire photographers
+                                        </p>
+                                    </div>
+                                </label>
+                                
+                                <label style={{ 
+                                    display: 'flex',
                                     alignItems: 'center',
-                                    padding: '8px 15px',
                                     cursor: 'pointer',
-                                    backgroundColor: category === 'photographer' ? '#f0e6ff' : 'transparent',
+                                    flexGrow: 1,
+                                    padding: '15px',
+                                    border: `1px solid ${category === 'photographer' ? 'var(--accent-color-1)' : 'var(--border-color)'}`,
                                     borderRadius: '5px',
-                                    border: category === 'photographer' ? '1px solid #6200ea' : '1px solid #ced4da' 
-                                }} onClick={() => setCategory('photographer')}>
-                                    <input 
-                                        type="radio" 
-                                        id="photographerRadio" 
+                                    backgroundColor: category === 'photographer' ? 'rgba(255, 165, 0, 0.1)' : 'transparent'
+                                }}>
+                                    <input
+                                        type="radio"
                                         name="category"
-                                        style={{ marginRight: '10px', transform: 'scale(1.2)', cursor: 'pointer' }}
+                                        value="photographer"
                                         checked={category === 'photographer'}
                                         onChange={() => setCategory('photographer')}
+                                        style={{ marginRight: '10px' }}
                                     />
-                                    <label htmlFor="photographerRadio" style={{ margin: 0, fontSize: '16px', cursor: 'pointer' }}>
-                                        <i className="fas fa-camera mr-2" style={{ color: '#6200ea' }}></i> Photographer
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="form-group mb-4">
-                            <div style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                padding: '10px 15px',
-                                borderRadius: '5px',
-                                border: '1px solid #ced4da',
-                                backgroundColor: '#f8f9fa'
-                            }}>
-                                <input 
-                                    type="checkbox" 
-                                    id="termsCheck" 
-                                    style={{ 
-                                        marginRight: '15px', 
-                                        transform: 'scale(1.2)',
-                                        cursor: 'pointer' 
-                                    }}
-                                    required 
-                                />
-                                <label htmlFor="termsCheck" style={{ 
-                                    margin: 0, 
-                                    fontSize: '16px',
-                                    cursor: 'pointer' 
-                                }}>
-                                    I agree to the <a href="#" style={{ color: '#6200ea', fontWeight: 'bold' }}>Terms of Service</a> and <a href="#" style={{ color: '#6200ea', fontWeight: 'bold' }}>Privacy Policy</a>
+                                    <div>
+                                        <strong style={{ color: 'var(--primary-color)' }}>Photographer</strong>
+                                        <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: 'var(--text-light)' }}>
+                                            I want to offer my services
+                                        </p>
+                                    </div>
                                 </label>
                             </div>
                         </div>
 
                         <button 
                             type="submit" 
-                            className="btn btn-block" 
-                            style={{ 
-                                backgroundColor: '#6200ea',
-                                color: 'white',
+                            className="btn-primary"
+                            style={{
+                                width: '100%',
                                 padding: '12px',
-                                borderRadius: '5px',
-                                fontWeight: 'bold',
+                                backgroundColor: 'var(--accent-color-1)',
+                                color: 'var(--primary-color)',
                                 border: 'none',
+                                borderRadius: '5px',
+                                fontSize: '16px',
+                                fontWeight: 'bold',
                                 cursor: 'pointer',
-                                transition: 'background-color 0.3s'
+                                marginBottom: '20px',
+                                transition: 'all 0.3s ease'
                             }}
                             disabled={isLoading}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-color-2)'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-color-1)'}
                         >
-                            {isLoading ? (
-                                <>
-                                    <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
-                                    Creating Account...
-                                </>
-                            ) : (
-                                <>
-                                    <i className="fas fa-user-plus mr-2"></i>
-                                    Sign Up
-                                </>
-                            )}
+                            {isLoading ? 'Creating Account...' : 'Create Account'}
                         </button>
+
+                        <div className="text-center" style={{ textAlign: 'center' }}>
+                            <p style={{ color: 'var(--text-light)' }}>
+                                Already have an account? 
+                                <Link to="/login" style={{ color: 'var(--accent-color-1)', fontWeight: 'bold', marginLeft: '5px', textDecoration: 'none' }}>
+                                    Sign in
+                                </Link>
+                            </p>
+                        </div>
                     </form>
 
-                    <div className="text-center mt-4">
-                        <p style={{ color: '#6c757d' }}>
-                            Already have an account? <Link to="/login" style={{ color: '#6200ea', fontWeight: 'bold', textDecoration: 'none' }}>Sign In</Link>
-                        </p>
-                    </div>
-                </div>
-
-                <div className="signup-footer" style={{
-                    padding: '15px',
-                    textAlign: 'center',
-                    borderTop: '1px solid #eee',
-                    backgroundColor: '#f8f9fa'
-                }}>
-                    <p className="text-muted mb-0" style={{ fontSize: '14px' }}>
-                        © 2024 Photography Portal. All rights reserved.
-                    </p>
+                    {/* Add extra space at the bottom to ensure scrolling */}
+                    <div style={{ height: '100px', marginTop: '20px' }}></div>
                 </div>
             </div>
         </div>

@@ -27,9 +27,21 @@ router.get('/', async (req, res) => {
             console.log(`Fetching bookings for user: ${req.query.userId}`);
         }
         
+        // Filter by photographerId if provided
+        if (req.query.photographerId) {
+            query.photographerId = req.query.photographerId;
+            console.log(`Fetching bookings for photographer: ${req.query.photographerId}`);
+        }
+        
         // Filter by status if provided
         if (req.query.status) {
             query.status = req.query.status;
+        }
+        
+        // Filter by pinCode if provided
+        if (req.query.pinCode) {
+            query.pinCode = req.query.pinCode;
+            console.log(`Fetching bookings for pinCode: ${req.query.pinCode}`);
         }
         
         console.log('Query:', query);

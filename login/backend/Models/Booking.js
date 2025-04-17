@@ -9,6 +9,7 @@ const bookingSchema = new mongoose.Schema({
     contactNumber: { type: String, required: false }, // Optional field
     decision: { type: String, required: false },
     location: { type: String, required: true },
+    pinCode: { type: String, required: false }, // PIN code for location filtering
     status: { type: String, default: 'Pending' }, // Pending, Confirmed, Cancelled, Completed
     photographer: { type: String, required: false }, // Name of assigned photographer
     photographerId: { type: String, required: false }, // ID of assigned photographer

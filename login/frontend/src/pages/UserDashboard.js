@@ -34,12 +34,19 @@ const UserDashboard = () => {
         // Get user details
         const fetchUserData = async () => {
             try {
+                const userId = localStorage.getItem('userId');
                 const response = await axios.get(`http://localhost:8080/api/auth/users/${userId}`);
                 setUser(response.data);
+                
+                // Save the user's name to localStorage for use in bookings
+                if (response.data && response.data.name) {
+                    localStorage.setItem('userName', response.data.name);
+                    console.log(`User name saved to localStorage: ${response.data.name}`);
+                }
             } catch (error) {
                 console.error('Failed to fetch user data:', error);
                 // If there's an error, try a simpler approach - show basic user info
-                setUser({ name: 'Test User' });
+                setUser({ name: localStorage.getItem('userName') || 'User' });
             }
         };
 
@@ -94,17 +101,25 @@ const UserDashboard = () => {
                 
                 if (Array.isArray(photographersResponse.data)) {
                     // Transform photographer data if needed
-                    const formattedPhotographers = photographersResponse.data.map(photographer => ({
-                        id: photographer._id,
-                        name: photographer.name || 'Unknown',
-                        specialization: photographer.specialization || 'General',
-                        experience: photographer.experience || '2+ years',
-                        rating: photographer.rating || 4.5,
-                        priceRange: photographer.priceRange || '₹20,000 - ₹40,000',
-                        location: photographer.location || 'Unknown',
-                        portfolio: photographer.portfolio || '#',
-                        imageUrl: photographer.imageUrl || 'https://randomuser.me/api/portraits/men/32.jpg'
-                    }));
+                    const formattedPhotographers = photographersResponse.data.map((photographer, index) => {
+                        // Use a different local image for each photographer, cycling through our 3 images
+                        const imageIndex = (index % 3) + 1;
+                        const localImage = require(`../image/photo${imageIndex}.jpg`);
+                        
+                        return {
+                            id: photographer._id,
+                            name: photographer.name || 'Unknown',
+                            specialization1: photographer.specialization || 'General',
+                            specialization2: photographer.secondarySpecialization,
+                            experience: photographer.experience || '2+ years',
+                            rating: photographer.rating || 4.5,
+                            priceRange: photographer.priceRange || '₹20,000 - ₹40,000',
+                            location: photographer.location || 'Unknown',
+                            portfolio: photographer.portfolio || '#',
+                            profileImage: localImage, // Always use local image
+                            bio: photographer.bio || 'Professional photographer with experience in various photography styles.'
+                        };
+                    });
                     
                     setPhotographers(formattedPhotographers);
                 } else {
@@ -126,6 +141,10 @@ const UserDashboard = () => {
 
     // Function to generate mock booking data
     const generateMockBookings = () => {
+        // Get the photographers first
+        const mockPhotographers = generateMockPhotographers();
+        const firstPhotographer = mockPhotographers[0]; // Rahul Sharma
+        
         return [
             {
                 id: '1',
@@ -133,8 +152,8 @@ const UserDashboard = () => {
                 date: '2024-05-15',
                 location: 'New Delhi',
                 status: 'Confirmed',
-                photographer: 'Test Photographer',
-                photographerRating: 4.8,
+                photographer: firstPhotographer.name, // Use Rahul Sharma's name
+                photographerRating: firstPhotographer.rating, // Use his actual rating
                 price: '₹45,000',
                 package: 'Premium'
             },
@@ -157,25 +176,42 @@ const UserDashboard = () => {
         return [
             {
                 id: '1',
-                name: 'Test Photographer',
-                specialization: 'Wedding Photography',
-                experience: '5+ years',
-                rating: 4.8,
+                name: 'Rahul Sharma',
+                specialization1: 'Wedding Photography',
+                specialization2: 'Portrait',
+                experience: '8+ years',
+                rating: 4.9,
                 priceRange: '₹30,000 - ₹50,000',
                 location: 'New Delhi',
                 portfolio: '#',
-                imageUrl: 'https://randomuser.me/api/portraits/men/32.jpg'
+                profileImage: require('../image/photo1.jpg'),
+                bio: 'Award-winning photographer with over 8 years of experience specializing in premium wedding photography and capturing life\'s most precious moments.'
             },
             {
                 id: '2',
-                name: 'Jane Smith',
-                specialization: 'Portrait Photography',
-                experience: '3+ years',
-                rating: 4.5,
-                priceRange: '₹15,000 - ₹30,000',
+                name: 'Priya Patel',
+                specialization1: 'Fashion',
+                specialization2: 'Corporate',
+                experience: '6+ years',
+                rating: 4.8,
+                priceRange: '₹25,000 - ₹45,000',
                 location: 'Mumbai',
                 portfolio: '#',
-                imageUrl: 'https://randomuser.me/api/portraits/women/44.jpg'
+                profileImage: require('../image/photo2.jpg'),
+                bio: 'Specializing in high-end fashion and commercial photography with a unique contemporary style that has been featured in leading magazines.'
+            },
+            {
+                id: '3',
+                name: 'Aryan Singh',
+                specialization1: 'Wildlife',
+                specialization2: 'Nature',
+                experience: '7+ years',
+                rating: 4.7,
+                priceRange: '₹20,000 - ₹40,000',
+                location: 'Bangalore',
+                portfolio: '#',
+                profileImage: require('../image/photo3.jpg'),
+                bio: 'National Geographic contributor specializing in wildlife and nature photography with a focus on conservation and environmental storytelling.'
             }
         ];
     };
@@ -184,27 +220,93 @@ const UserDashboard = () => {
         try {
             console.log("Form data received in UserDashboard:", formData);
             
-            // Add user ID to the booking data
+            // Make sure we have the pin code - log it to help with debugging
+            if (formData.pinCode) {
+                console.log(`Booking has pin code: ${formData.pinCode}`);
+            } else {
+                console.warn("Warning: Booking doesn't have a PIN code!");
+                setAlertMessage({
+                    type: 'warning',
+                    title: 'Missing PIN Code',
+                    message: 'Your booking does not have a PIN code. Photographers may not be able to find it.'
+                });
+                return; // Prevent submission without pin code
+            }
+            
+            // Validate contact number
+            if (!formData.contactNumber || formData.contactNumber.length !== 10) {
+                console.warn("Warning: Invalid contact number!");
+                setAlertMessage({
+                    type: 'warning',
+                    title: 'Invalid Contact Number',
+                    message: 'Please provide a valid 10-digit contact number.'
+                });
+                return; // Prevent submission without valid contact number
+            }
+            
+            // Get the user ID and user data from localStorage or state
             const userId = localStorage.getItem('userId');
+            const userName = user?.name || localStorage.getItem('userName') || 'Anonymous User';
+            
+            // Get user contact information from state or form data
+            const contactInfo = {
+                email: user?.email || localStorage.getItem('userEmail') || 'Not provided',
+                phone: formData.contactNumber || 'Not provided'
+            };
+            
+            // Add user ID, name, and contact info to the booking data
             const bookingData = {
                 ...formData,
                 userId,
+                userName,
+                userContactEmail: contactInfo.email,
+                userContactPhone: contactInfo.phone,
                 status: 'Pending',
                 createdAt: new Date().toISOString()
             };
+            
+            console.log("Sending booking data to API with user:", userName);
+            console.log("Full booking data:", bookingData);
             
             // Post to API
             const response = await axios.post('http://localhost:8080/api/bookings', bookingData);
             
             if (response.status === 201) {
-                alert('Booking saved successfully!');
+                console.log("Booking saved successfully!", response.data);
+                
+                // Save the pin code to localStorage for future use
+                if (formData.pinCode) {
+                    localStorage.setItem('lastUsedPinCode', formData.pinCode);
+                }
+                
+                // Show success alert message instead of using window.alert
+                setAlertMessage({
+                    type: 'success',
+                    title: 'Booking Saved!',
+                    message: 'Your booking request has been submitted successfully and photographers in your area will be notified.'
+                });
+                
+                // Auto-hide alert after 5 seconds
+                setTimeout(() => {
+                    setAlertMessage(null);
+                }, 5000);
+                
                 fetchData(); // Refresh bookings after new booking
             } else {
-                alert('Failed to save booking. Please try again.');
+                console.error("Unexpected response status:", response.status);
+                setAlertMessage({
+                    type: 'danger',
+                    title: 'Booking Failed',
+                    message: 'Failed to save booking. Please try again.'
+                });
             }
         } catch (error) {
             console.error('Error saving booking:', error.response?.data || error.message);
-            alert('Failed to save booking. Please try again.');
+            setAlertMessage({
+                type: 'danger',
+                title: 'Booking Failed',
+                message: 'Failed to save booking. Please try again.'
+            });
         } finally {
             setShowPopup(false); // Close the popup after submission
         }
@@ -278,17 +380,35 @@ const UserDashboard = () => {
                 });
                 setFavoritePhotographers(favoritePhotographers.filter(p => p.id !== photographerId));
             } else {
-                // Add to favorites
-                const response = await axios.post(
-                    'http://localhost:8080/api/users/favorites',
-                    { photographerId },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${localStorage.getItem('token')}`
+                // Find the photographer from our list
+                const photographer = photographers.find(p => p.id === photographerId);
+                
+                // Instead of waiting for API, add directly to state for immediate feedback
+                const favoritePhotographer = {
+                    ...photographer,
+                    // Ensure we're using a local image
+                    profileImage: photographer.id === '1' ? require('../image/photo1.jpg') :
+                                  photographer.id === '2' ? require('../image/photo2.jpg') :
+                                  require('../image/photo3.jpg')
+                };
+                
+                // Also try to save to API if available
+                try {
+                    await axios.post(
+                        'http://localhost:8080/api/users/favorites',
+                        { photographerId },
+                        {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('token')}`
+                            }
                         }
-                    }
-                );
-                setFavoritePhotographers([...favoritePhotographers, response.data]);
+                    );
+                } catch (apiError) {
+                    console.error("API error when saving favorite:", apiError);
+                    // Continue with local state update even if API fails
+                }
+                
+                setFavoritePhotographers([...favoritePhotographers, favoritePhotographer]);
             }
         } catch (error) {
             console.error("Error toggling favorite:", error);
@@ -301,17 +421,23 @@ const UserDashboard = () => {
         setShowPopup(true);
     };
 
-    // Add an immediate notification to test the UI
+    // Add an immediate notification to test the UI without showing alerts
     useEffect(() => {
+        // Get actual photographers to use in notifications
+        const actualPhotographers = generateMockPhotographers();
+        const rahulSharma = actualPhotographers[0]; // This will be Rahul Sharma based on the mock data
+        
         // Initialize with mock notification data for development
         const mockNotifications = [
             {
                 _id: '1',
-                message: 'Your booking has been accepted by Test Photographer. Your session is now confirmed!',
+                message: `Your booking has been accepted by ${rahulSharma.name}. Your session is now confirmed!`,
                 createdAt: new Date().toISOString(),
                 isRead: false,
                 type: 'booking_accepted',
-                bookingId: '1' // Match with first booking id in mock data
+                bookingId: '1', // Match with first booking id in mock data
+                photographerId: rahulSharma.id,
+                photographerName: rahulSharma.name
             },
             {
                 _id: '2',
@@ -329,14 +455,34 @@ const UserDashboard = () => {
             }
         ];
         
+        // We don't need to modify the bookings here since they'll be set 
+        // with the correct photographer name from generateMockBookings
+
         setNotifications(mockNotifications);
         setUnreadCount(mockNotifications.filter(notif => !notif.isRead).length);
         
-        // Show an alert for the unread notification
+        // Process the unread notification but DO NOT show alert
         const unreadNotification = mockNotifications.find(notif => !notif.isRead);
         if (unreadNotification) {
+            // Update booking status without showing alert
             showNotificationAlert(unreadNotification);
         }
+
+        // Add a mock favorite photographer
+        const mockFavorite = {
+            id: '2',
+            name: 'Priya Patel',
+            specialization1: 'Fashion',
+            specialization2: 'Corporate',
+            experience: '6+ years',
+            rating: 4.8,
+            priceRange: '₹25,000 - ₹45,000',
+            location: 'Mumbai',
+            portfolio: '#',
+            profileImage: require('../image/photo2.jpg'),
+            bio: 'Specializing in high-end fashion and commercial photography with a unique contemporary style that has been featured in leading magazines.'
+        };
+        setFavoritePhotographers([mockFavorite]);
 
         // Setup polling for new notifications (after initial mock data is set)
         const notificationInterval = setInterval(() => {
@@ -356,7 +502,7 @@ const UserDashboard = () => {
         setShowNotifications(!showNotifications);
     };
 
-    // Modified fetchNotifications to handle real-time updates
+    // Modified fetchNotifications to remove automatic alerts
     const fetchNotifications = async () => {
         try {
             const userId = localStorage.getItem('userId');
@@ -371,23 +517,84 @@ const UserDashboard = () => {
                     timeout: 3000 // Set a 3 second timeout to fail fast when server is down
                 });
                 
-                if (Array.isArray(response.data)) {
+                if (Array.isArray(response.data) && response.data.length > 0) {
                     // Check if we have new notifications
-                    const currentNotifCount = unreadCount;
+                    const currentNotifications = notifications;
                     const newNotifications = response.data;
-                    const newUnreadCount = newNotifications.filter(notif => !notif.isRead).length;
+                    
+                    // Find any new unread notifications that weren't in our previous list
+                    const brandNewNotifications = newNotifications.filter(
+                        newNotif => !newNotif.isRead && 
+                        !currentNotifications.some(oldNotif => oldNotif._id === newNotif._id)
+                    );
                     
                     // Update notifications state
                     setNotifications(newNotifications);
-                    setUnreadCount(newUnreadCount);
+                    setUnreadCount(newNotifications.filter(notif => !notif.isRead).length);
                     
-                    // If there are new notifications, show notification alert and refresh bookings
-                    if (newUnreadCount > currentNotifCount) {
-                        // Play notification sound or show toast
-                        showNotificationAlert(newNotifications.filter(notif => !notif.isRead)[0]);
+                    // Process new notifications for booking status updates, but DON'T show alerts
+                    if (brandNewNotifications.length > 0) {
+                        console.log("New notifications received:", brandNewNotifications);
+                        
+                        // Process booking accepted notification first if it exists
+                        const acceptedNotification = brandNewNotifications.find(
+                            notif => notif.type === 'booking_accepted'
+                        );
+                        
+                        if (acceptedNotification) {
+                            showNotificationAlert(acceptedNotification);
+                        } else if (brandNewNotifications.length > 0) {
+                            // Otherwise process the first new notification
+                            showNotificationAlert(brandNewNotifications[0]);
+                        }
                         
                         // Refresh bookings to get latest status
                         fetchData();
+                    }
+                } else if (process.env.NODE_ENV === 'development') {
+                    // For development: simulate a new booking acceptance notification every 2 minutes
+                    // This ensures we can test the notification UI even without a backend
+                    const now = new Date();
+                    const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000); // 2 minutes ago
+                    const lastNotificationTime = localStorage.getItem('lastNotificationTime');
+                    
+                    if (!lastNotificationTime || new Date(lastNotificationTime) < twoMinutesAgo) {
+                        // Get a booking that's in pending status to simulate it being accepted
+                        const pendingBooking = bookings.find(b => b.status?.toLowerCase() === 'pending');
+                        
+                        if (pendingBooking) {
+                            // Try to find a real photographer from our list
+                            const availablePhotographers = photographers.length > 0 ? 
+                                photographers : generateMockPhotographers();
+                            
+                            // Select a random photographer from our photographers list
+                            const randomPhotographer = availablePhotographers[
+                                Math.floor(Math.random() * availablePhotographers.length)
+                            ];
+                            
+                            const photographerName = randomPhotographer.name;
+                            
+                            const mockAcceptedNotification = {
+                                _id: 'mock-' + Date.now(),
+                                message: `Your booking has been accepted by ${photographerName}. Your session is now confirmed!`,
+                                createdAt: new Date().toISOString(),
+                                isRead: false,
+                                type: 'booking_accepted',
+                                bookingId: pendingBooking.id || pendingBooking._id,
+                                photographerId: randomPhotographer.id || randomPhotographer._id,
+                                photographerName: photographerName
+                            };
+                            
+                            const updatedNotifications = [mockAcceptedNotification, ...notifications];
+                            setNotifications(updatedNotifications);
+                            setUnreadCount(updatedNotifications.filter(notif => !notif.isRead).length);
+                            
+                            // Process the notification but don't show alert
+                            showNotificationAlert(mockAcceptedNotification);
+                            
+                            // Store the time we showed this notification
+                            localStorage.setItem('lastNotificationTime', now.toISOString());
+                        }
                     }
                 }
             } catch (error) {
@@ -395,9 +602,6 @@ const UserDashboard = () => {
                 if (process.env.NODE_ENV === 'development') {
                     console.error('Failed to fetch notifications from API:', error);
                 }
-                
-                // We already have mock notifications loaded from useEffect, 
-                // so we don't need to set them again here
             }
         } catch (error) {
             console.error('Failed to process notifications:', error);
@@ -406,34 +610,54 @@ const UserDashboard = () => {
 
     // Function to show notification alert
     const showNotificationAlert = (notification) => {
-        // Create and show a toast or alert for the new notification
+        console.log("Processing notification:", notification);
+        
+        // Only update the booking status, DON'T show alert messages automatically
         if (notification.type === 'booking_accepted') {
-            setAlertMessage({
-                type: 'success',
-                title: 'Booking Accepted!',
-                message: notification.message
-            });
+            // Get photographer name directly from notification if available,
+            // otherwise extract it from the message
+            let photographerName = notification.photographerName;
             
-            // Extract photographer name from notification message
-            const messageRegex = /Your booking has been accepted by (.+)\./;
-            const match = notification.message.match(messageRegex);
-            const photographerName = match ? match[1] : 'Unknown';
+            if (!photographerName) {
+                const messageRegex = /Your booking has been accepted by (.+?)\./;
+                const match = notification.message.match(messageRegex);
+                photographerName = match ? match[1] : 'Unknown';
+            }
+            
+            // Try to find the photographer in our list to get their rating
+            let photographerRating = 4.8; // Default rating
+            const matchedPhotographer = photographers.find(p => 
+                p.name === photographerName || p.id === notification.photographerId
+            );
+            
+            if (matchedPhotographer) {
+                photographerRating = matchedPhotographer.rating;
+            }
             
             // Update the corresponding booking status and photographer
             if (notification.bookingId) {
-                const updatedBookings = bookings.map(booking => 
-                    booking.id === notification.bookingId || booking._id === notification.bookingId ? 
-                    { ...booking, status: 'Confirmed', photographer: photographerName } : booking
-                );
+                const updatedBookings = bookings.map(booking => {
+                    // Check if this is the booking that was accepted
+                    if (booking.id === notification.bookingId || booking._id === notification.bookingId) {
+                        console.log(`Updating booking ${booking.id} status to Confirmed with photographer ${photographerName}`);
+                        return { 
+                            ...booking, 
+                            status: 'Confirmed', 
+                            photographer: photographerName,
+                            photographerRating: photographerRating
+                        };
+                    }
+                    return booking;
+                });
+                
+                // Update state with the modified bookings
+                console.log("Updated bookings:", updatedBookings);
                 setBookings(updatedBookings);
+                
+                // Force a refresh to re-fetch data from server if possible
+                setTimeout(fetchData, 1000);
             }
         } else if (notification.type === 'booking_rejected') {
-            setAlertMessage({
-                type: 'danger',
-                title: 'Booking Declined',
-                message: notification.message
-            });
-            
             // Update the corresponding booking status
             if (notification.bookingId) {
                 const updatedBookings = bookings.map(booking => 
@@ -441,11 +665,39 @@ const UserDashboard = () => {
                     { ...booking, status: 'Cancelled' } : booking
                 );
                 setBookings(updatedBookings);
+                
+                // Force a refresh to re-fetch data from server if possible
+                setTimeout(fetchData, 1000);
             }
+        }
+        
+        // REMOVED: No longer automatically showing alert messages here
+    };
+
+    // Mark notification as read - Modified to show alerts when clicked
+    const markAsRead = async (notificationId) => {
+        try {
+            // Find the notification that was clicked
+            const notification = notifications.find(notif => notif._id === notificationId);
+            
+            // Show alert for the clicked notification
+            if (notification) {
+                if (notification.type === 'booking_accepted') {
+                    setAlertMessage({
+                        type: 'success',
+                        title: 'Booking Accepted!',
+                        message: notification.message
+                    });
+                } else if (notification.type === 'booking_rejected') {
+                    setAlertMessage({
+                        type: 'danger',
+                        title: 'Booking Declined',
+                        message: notification.message
+                    });
         } else {
             setAlertMessage({
                 type: 'info',
-                title: 'New Notification',
+                        title: 'Notification',
                 message: notification.message
             });
         }
@@ -454,11 +706,8 @@ const UserDashboard = () => {
         setTimeout(() => {
             setAlertMessage(null);
         }, 5000);
-    };
+            }
 
-    // Mark notification as read
-    const markAsRead = async (notificationId) => {
-        try {
             await axios.put(`http://localhost:8080/api/notifications/${notificationId}`, 
                 { isRead: true },
                 {
@@ -510,62 +759,157 @@ const UserDashboard = () => {
     return (
         <div className="dashboard-container" style={{ 
             minHeight: '100vh',
-            width: '100%',
-            margin: 0,
-            padding: 0,
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-            overflowX: 'hidden'
+            width: '100vw',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 100,
+            backgroundColor: 'var(--primary-color)'
         }}>
-            {/* Header - Navbar style */}
-            <nav className="navbar navbar-expand-lg bg-dark text-white py-3 px-4 w-100">
-              <div className="container-fluid d-flex justify-content-between align-items-center">
-
-                {/* Left: Dashboard */}
-                <div className="d-flex align-items-center">
-                  <div className="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style={{ width: '36px', height: '36px' }}>
-                    <i className="fas fa-tachometer-alt text-white"></i>
-                  </div>
-                  <h4 className="mb-0 text-danger fw-bold">Dashboard</h4>
+            {/* Top Navigation Bar */}
+            <div style={{
+                backgroundColor: 'var(--primary-color)',
+                color: 'var(--accent-color-2)',
+                padding: '15px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.5rem' }}>
+                        <i className="fas fa-camera" style={{ marginRight: '10px' }}></i>
+                        clickshick.com
+                    </h2>
                 </div>
 
-                {/* Center: Welcome Text */}
-                <div className="text-center">
-                  {user && (
-                    <h6 className="mb-0 text-light">Welcome, <span className="fw-semibold">{user.name}</span></h6>
-                  )}
-                </div>
-
-                {/* Right: Notification, Book Session, Sign Out */}
-                <div className="d-flex align-items-center">
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {/* Add Book Session Button */}
                   <button 
-                    className="btn btn-light rounded-circle me-3 p-2" 
-                    style={{ width: '34px', height: '34px' }}
-                    onClick={toggleNotifications}
-                  >
-                    <i className="fas fa-bell text-dark fa-sm"></i>
+                        onClick={handleOpenPopup}
+                    style={{ 
+                            backgroundColor: 'var(--accent-color-1)',
+                            color: 'var(--primary-color)',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '8px 16px',
+                            marginRight: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            fontWeight: 'bold',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <i className="fas fa-calendar-plus" style={{ marginRight: '8px' }}></i>
+                        Book Session
+                    </button>
+                    
+                    {/* Notifications icon */}
+                    <div style={{ position: 'relative', marginRight: '20px', cursor: 'pointer' }} onClick={toggleNotifications}>
+                        <i className="fas fa-bell" style={{ fontSize: '1.4rem' }}></i>
                     {unreadCount > 0 && (
-                      <span className="badge badge-danger position-absolute" 
-                            style={{ top: '-5px', right: '-5px', fontSize: '0.6rem' }}>
+                            <span style={{
+                                position: 'absolute',
+                                top: '-8px',
+                                right: '-8px',
+                                backgroundColor: 'var(--accent-color-1)',
+                                color: 'var(--primary-color)',
+                                borderRadius: '50%',
+                                width: '20px',
+                                height: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.7rem',
+                                fontWeight: 'bold'
+                            }}>
                         {unreadCount}
                       </span>
                     )}
-                  </button>
-                  <button 
-                    className="btn btn-sm btn-primary me-4 px-3"
-                    onClick={handleOpenPopup}
-                  >
-                    <i className="fas fa-camera me-1"></i>Book Session
-                  </button>
-                  <button 
-                    className="btn btn-sm btn-danger px-3"
-                    onClick={handleLogout}
-                  >
-                    <i className="fas fa-sign-out-alt me-1"></i>Sign Out
-                  </button>
                 </div>
 
+                    {/* User info with dropdown */}
+                    <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--accent-color-1)',
+                            color: 'var(--primary-color)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: '10px',
+                            fontWeight: 'bold'
+                        }}>
+                            {user && user.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
-            </nav>
+                        <span style={{ fontWeight: 'bold' }}>
+                            {user ? user.name : 'User'}
+                        </span>
+                        <i className="fas fa-chevron-down" style={{ marginLeft: '8px', fontSize: '0.8rem' }}></i>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Main content area */}
+            <div style={{ display: 'flex', height: 'calc(100vh - 70px)' }}>
+                {/* Sidebar */}
+                <div style={{
+                    width: '250px',
+                    backgroundColor: 'var(--secondary-color-1)',
+                    color: 'var(--accent-color-2)',
+                    padding: '20px 0'
+                }}>
+                    <div style={{ padding: '0 20px', marginBottom: '30px' }}>
+                        <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem' }}>User Dashboard</h3>
+                        <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.8 }}>Manage your photo sessions</p>
+                    </div>
+                    
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                        <li style={{
+                            padding: '12px 20px',
+                            backgroundColor: activeTab === 'bookings' ? 'var(--primary-color)' : 'transparent',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.3s'
+                        }} onClick={() => setActiveTab('bookings')}>
+                            <i className="fas fa-calendar-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+                            My Bookings
+                        </li>
+                        <li style={{
+                            padding: '12px 20px',
+                            backgroundColor: activeTab === 'photographers' ? 'var(--primary-color)' : 'transparent',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.3s'
+                        }} onClick={() => setActiveTab('photographers')}>
+                            <i className="fas fa-camera" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+                            Find Photographers
+                        </li>
+                        <li style={{
+                            padding: '12px 20px',
+                            backgroundColor: activeTab === 'favorites' ? 'var(--primary-color)' : 'transparent',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.3s'
+                        }} onClick={() => setActiveTab('favorites')}>
+                            <i className="fas fa-heart" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+                            Favorites
+                        </li>
+                        <li style={{
+                            padding: '12px 20px',
+                            marginTop: '20px',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.3s',
+                            color: 'var(--accent-color-1)'
+                        }} onClick={handleLogout}>
+                            <i className="fas fa-sign-out-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+                            Logout
+                        </li>
+                    </ul>
+                </div>
 
             {/* Notification Alert */}
             {alertMessage && (
@@ -621,7 +965,7 @@ const UserDashboard = () => {
                                                 <i className="fas fa-info-circle text-primary fa-lg"></i>
                                             )}
                                         </div>
-                                        <div>
+        <div>
                                             <p className="mb-1">{notification.message}</p>
                                             <small className="text-muted d-block">{new Date(notification.createdAt).toLocaleString()}</small>
                                         </div>
@@ -635,60 +979,8 @@ const UserDashboard = () => {
                 </div>
             )}
 
-            {/* Navigation Tabs */}
-            <div className="container-fluid py-4">
-                <div className="row mx-2 mb-4">
-                    <div className="col-12">
-                        <ul className="nav nav-tabs nav-fill">
-                            <li className="nav-item">
-                                <button 
-                                    className={`nav-link ${activeTab === "bookings" ? "active" : ""}`}
-                                    onClick={() => setActiveTab("bookings")}
-                                    style={{ 
-                                        fontWeight: 'bold',
-                                        color: activeTab === "bookings" ? '#6200ea' : '#495057',
-                                        borderColor: activeTab === "bookings" ? '#dee2e6 #dee2e6 #fff' : '#dee2e6',
-                                        borderBottom: activeTab === "bookings" ? '3px solid #6200ea' : 'none'
-                                    }}
-                                >
-                                    <i className="fas fa-calendar-check mr-2"></i>
-                                    My Bookings
-                                </button>
-                            </li>
-                            <li className="nav-item">
-                                <button 
-                                    className={`nav-link ${activeTab === "photographers" ? "active" : ""}`}
-                                    onClick={() => setActiveTab("photographers")}
-                                    style={{ 
-                                        fontWeight: 'bold',
-                                        color: activeTab === "photographers" ? '#6200ea' : '#495057',
-                                        borderColor: activeTab === "photographers" ? '#dee2e6 #dee2e6 #fff' : '#dee2e6',
-                                        borderBottom: activeTab === "photographers" ? '3px solid #6200ea' : 'none'
-                                    }}
-                                >
-                                    <i className="fas fa-camera-retro mr-2"></i>
-                                    Photographers
-                                </button>
-                            </li>
-                            <li className="nav-item">
-                                <button 
-                                    className={`nav-link ${activeTab === "favorites" ? "active" : ""}`}
-                                    onClick={() => setActiveTab("favorites")}
-                                    style={{ 
-                                        fontWeight: 'bold',
-                                        color: activeTab === "favorites" ? '#6200ea' : '#495057',
-                                        borderColor: activeTab === "favorites" ? '#dee2e6 #dee2e6 #fff' : '#dee2e6',
-                                        borderBottom: activeTab === "favorites" ? '3px solid #6200ea' : 'none'
-                                    }}
-                                >
-                                    <i className="fas fa-heart mr-2"></i>
-                                    Favorites
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
+                {/* Remove the Navigation Tabs section */}
+                <div className="container-fluid py-4" style={{ flex: 1, overflowY: 'auto' }}>
                 {loading ? (
                     <div className="text-center p-5">
                         <div className="spinner-border" style={{ color: '#6200ea' }} role="status">
@@ -702,7 +994,10 @@ const UserDashboard = () => {
                             <>
                                 <div className="row mx-2 mb-4">
                                     <div className="col-lg-3 col-md-6 mb-3">
-                                        <div className="card shadow-sm text-white" style={{ backgroundColor: '#6200ea' }}>
+                                        <div className="card shadow-sm text-white" style={{ 
+                                            backgroundColor: '#4E342E',
+                                            borderRadius: '10px'
+                                        }}>
                                             <div className="card-body">
                                                 <h5 className="card-title">Total Bookings</h5>
                                                 <h2>{bookings.length}</h2>
@@ -710,7 +1005,10 @@ const UserDashboard = () => {
                                         </div>
                                     </div>
                                     <div className="col-lg-3 col-md-6 mb-3">
-                                        <div className="card shadow-sm text-white bg-success">
+                                        <div className="card shadow-sm text-white" style={{ 
+                                            backgroundColor: '#4E342E',
+                                            borderRadius: '10px'
+                                        }}>
                                             <div className="card-body">
                                                 <h5 className="card-title">Confirmed</h5>
                                                 <h2>{bookings.filter(b => b.status?.toLowerCase() === 'confirmed').length}</h2>
@@ -718,7 +1016,10 @@ const UserDashboard = () => {
                                         </div>
                                     </div>
                                     <div className="col-lg-3 col-md-6 mb-3">
-                                        <div className="card shadow-sm text-white bg-warning">
+                                        <div className="card shadow-sm text-white" style={{ 
+                                            backgroundColor: '#4E342E',
+                                            borderRadius: '10px'
+                                        }}>
                                             <div className="card-body">
                                                 <h5 className="card-title">Pending</h5>
                                                 <h2>{bookings.filter(b => b.status?.toLowerCase() === 'pending').length}</h2>
@@ -726,7 +1027,10 @@ const UserDashboard = () => {
                                         </div>
                                     </div>
                                     <div className="col-lg-3 col-md-6 mb-3">
-                                        <div className="card shadow-sm text-white" style={{ backgroundColor: '#17a2b8' }}>
+                                        <div className="card shadow-sm text-white" style={{ 
+                                            backgroundColor: '#4E342E',
+                                            borderRadius: '10px'
+                                        }}>
                                             <div className="card-body">
                                                 <h5 className="card-title">Completed</h5>
                                                 <h2>{bookings.filter(b => b.status?.toLowerCase() === 'completed').length}</h2>
@@ -820,14 +1124,14 @@ const UserDashboard = () => {
                                                 <i className="fas fa-info-circle fa-3x mb-3" style={{ color: '#6200ea' }}></i>
                                                 <h4>No bookings available</h4>
                                                 <p>You haven't made any photography bookings yet.</p>
-                                                <button 
+            <button
                                                     className="btn mt-2" 
                                                     onClick={handleOpenPopup}
-                                                    style={{ backgroundColor: '#6200ea', color: 'white' }}
-                                                >
+                                                    style={{ backgroundColor: 'rgba(106, 17, 203, 0.9)', color: 'white' }}
+            >
                                                     <i className="fas fa-camera mr-2"></i>
                                                     Book Session
-                                                </button>
+            </button>
                                             </div>
                                         </div>
                                     )}
@@ -838,11 +1142,11 @@ const UserDashboard = () => {
                         {activeTab === "photographers" && (
                             <div className="row mx-2">
                                 <div className="col-12 mb-4">
-                                    <h3 style={{ color: '#6200ea' }}>
+                                    <h3 style={{ color: 'white' }}>
                                         <i className="fas fa-camera-retro mr-2"></i>
                                         Top Photographers
                                     </h3>
-                                    <p>Discover talented photographers for your next session.</p>
+                                    <p style={{ color: 'white' }}>Discover talented photographers for your next session.</p>
                                 </div>
                                 
                                 {photographers.length > 0 ? (
@@ -860,7 +1164,7 @@ const UserDashboard = () => {
                                             >
                                                 <div className="position-relative">
                                                     <img 
-                                                        src={photographer.profileImage || "https://via.placeholder.com/300x200?text=Photographer"} 
+                                                        src={photographer.profileImage} 
                                                         alt={photographer.name} 
                                                         className="card-img-top"
                                                         style={{ height: '200px', objectFit: 'cover' }}
@@ -885,9 +1189,9 @@ const UserDashboard = () => {
                                                         {photographer.location}
                                                     </p>
                                                     <p className="card-text mb-3">
-                                                        <span className="badge badge-pill mr-1" style={{ backgroundColor: '#6a11cb', color: 'white' }}>{photographer.specialization1}</span>
+                                                        <span className="badge badge-pill mr-1" style={{ backgroundColor: 'rgba(106, 17, 203, 0.1)', color: '#6a11cb', border: '1px solid #6a11cb', fontWeight: 'bold' }}>{photographer.specialization1}</span>
                                                         {photographer.specialization2 && (
-                                                            <span className="badge badge-pill mr-1" style={{ backgroundColor: '#3700b3', color: 'white' }}>{photographer.specialization2}</span>
+                                                            <span className="badge badge-pill mr-1" style={{ backgroundColor: 'rgba(55, 0, 179, 0.1)', color: '#3700b3', border: '1px solid #3700b3', fontWeight: 'bold' }}>{photographer.specialization2}</span>
                                                         )}
                                                     </p>
                                                     <p className="card-text">
@@ -900,11 +1204,11 @@ const UserDashboard = () => {
                                                     </button>
                                                     <button 
                                                         className="btn btn-sm" 
-                                                        style={{ backgroundColor: '#6a11cb', color: 'white' }}
+                                                        style={{ backgroundColor: 'rgba(106, 17, 203, 0.9)', color: 'white' }}
                                                         onClick={() => bookPhotographer(photographer)}
                                                     >
                                                         <i className="fas fa-calendar-plus mr-1"></i> Book Now
-                                                    </button>
+            </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -924,15 +1228,20 @@ const UserDashboard = () => {
                         {activeTab === "favorites" && (
                             <div className="row mx-2">
                                 <div className="col-12 mb-4">
-                                    <h3 style={{ color: '#6200ea' }}>
+                                    <h3 style={{ color: 'white' }}>
                                         <i className="fas fa-heart mr-2"></i>
                                         My Favorite Photographers
                                     </h3>
-                                    <p>Photographers you've saved for future bookings.</p>
+                                    <p style={{ color: 'white' }}>Photographers you've saved for future bookings.</p>
                                 </div>
                                 
                                 {favoritePhotographers.length > 0 ? (
-                                    favoritePhotographers.map((photographer, index) => (
+                                    favoritePhotographers.map((photographer, index) => {
+                                        // Ensure the photographer has a local image
+                                        const imageIndex = (index % 3) + 1;
+                                        const localImage = require(`../image/photo${imageIndex}.jpg`);
+                                        
+                                        return (
                                         <div key={index} className="col-xl-4 col-lg-6 col-md-6 mb-4">
                                             <div className="card h-100 shadow-sm" style={{ 
                                                 borderRadius: '10px',
@@ -946,7 +1255,7 @@ const UserDashboard = () => {
                                             >
                                                 <div className="position-relative">
                                                     <img 
-                                                        src={photographer.profileImage || "https://via.placeholder.com/300x200?text=Photographer"} 
+                                                        src={localImage} 
                                                         alt={photographer.name} 
                                                         className="card-img-top"
                                                         style={{ height: '200px', objectFit: 'cover' }}
@@ -993,7 +1302,8 @@ const UserDashboard = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                    ))
+                                        );
+                                    })
                                 ) : (
                                     <div className="col-12 text-center mt-5">
                                         <div className="alert alert-info p-5" style={{ background: 'rgba(98, 0, 234, 0.1)', border: '1px solid #6a11cb' }}>
@@ -1003,7 +1313,7 @@ const UserDashboard = () => {
                                             <button 
                                                 className="btn mt-2" 
                                                 onClick={() => setActiveTab("photographers")}
-                                                style={{ backgroundColor: '#6a11cb', color: 'white' }}
+                                                style={{ backgroundColor: 'rgba(106, 17, 203, 0.9)', color: 'white' }}
                                             >
                                                 <i className="fas fa-camera-retro mr-2"></i>
                                                 Browse Photographers
@@ -1015,12 +1325,8 @@ const UserDashboard = () => {
                         )}
                     </>
                 )}
+                </div>
             </div>
-
-            {/* Footer */}
-            <footer className="bg-dark text-white text-center py-3 mt-auto" style={{ width: '100%' }}>
-                <p className="m-0">© 2024 Photography Portal. All rights reserved.</p>
-            </footer>
 
             {/* Photographer Booking Popup */}
             {showPopup && (

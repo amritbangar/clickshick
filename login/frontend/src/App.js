@@ -5,7 +5,11 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
 import PhotographerDashboard from './pages/PhotographerDashboard';
-import './App.css';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import ThemeProvider from './components/ThemeProvider';
+import './styles/reset.css';
+import './styles/globalStyles.css';
 
 const App = () => {
     const [userType, setUserType] = useState(null);
@@ -21,7 +25,7 @@ const App = () => {
     }, []);
 
     // Protected route component
-    const ProtectedRoute = ({ element, allowedUserType }) => {
+    const ProtectedRoute = ({ children, allowedUserType }) => {
         const token = localStorage.getItem('token');
         const category = localStorage.getItem('userCategory');
         
@@ -36,51 +40,106 @@ const App = () => {
         }
         
         // User is authenticated and has correct type
-        return element;
+        return children;
+    };
+
+    // Layout component with navbar for public pages (excluding Home, Login, and Signup)
+    const PublicLayout = ({ children, hideFooter = false }) => {
+        return (
+            <div className="app-container">
+                <Navbar />
+                <main className="flex-grow">
+                    {children}
+                </main>
+                {!hideFooter && <Footer />}
+            </div>
+        );
+    };
+    
+    // Layout component for Home, Login and Signup pages without navbar
+    const CleanLayout = ({ children, hideFooter = false }) => {
+        return (
+            <div className="app-container">
+                <main className="flex-grow">
+                    {children}
+                </main>
+                {!hideFooter && <Footer />}
+            </div>
+        );
+    };
+
+    // Dashboard Layout without navbar
+    const DashboardLayout = ({ children, hideFooter = false }) => {
+        return (
+            <div className="app-container dashboard-container">
+                <main className="flex-grow">
+                    {children}
+                </main>
+                {!hideFooter && <Footer />}
+            </div>
+        );
     };
 
     return (
-        <Router>
-            <div className="flex flex-col min-h-screen">
-                <main className="flex-grow">
-                    <Routes>
-                        {/* Home Page */}
-                        <Route path="/" element={<Home />} />
+        <ThemeProvider>
+            <Router>
+                <Routes>
+                    {/* Home Page - use CleanLayout without navbar */}
+                    <Route 
+                        path="/" 
+                        element={
+                            <CleanLayout>
+                                <Home />
+                            </CleanLayout>
+                        } 
+                    />
 
-                        {/* Login Page */}
-                        <Route
-                            path="/login"
-                            element={<Login setUserType={setUserType} />}
-                        />
+                    {/* Login Page - use CleanLayout without navbar */}
+                    <Route
+                        path="/login"
+                        element={
+                            <CleanLayout>
+                                <Login setUserType={setUserType} />
+                            </CleanLayout>
+                        }
+                    />
 
-                        {/* Signup Page */}
-                        <Route path="/signup" element={<Signup />} />
+                    {/* Signup Page - use CleanLayout without navbar */}
+                    <Route 
+                        path="/signup" 
+                        element={
+                            <CleanLayout>
+                                <Signup />
+                            </CleanLayout>
+                        } 
+                    />
 
-                        {/* User Dashboard */}
-                        <Route
-                            path="/user-dashboard"
-                            element={
-                                <ProtectedRoute 
-                                    element={<UserDashboard />} 
-                                    allowedUserType="user" 
-                                />
-                            }
-                        />
+                    {/* User Dashboard */}
+                    <Route
+                        path="/user-dashboard"
+                        element={
+                            <ProtectedRoute allowedUserType="user">
+                                <DashboardLayout>
+                                    <UserDashboard />
+                                </DashboardLayout>
+                            </ProtectedRoute>
+                        }
+                    />
 
-                        {/* Photographer Dashboard */}
-                        <Route
-                            path="/photographer-dashboard"
-                            element={
-                                <ProtectedRoute 
-                                    element={<PhotographerDashboard />} 
-                                    allowedUserType="photographer" 
-                                />
-                            }
-                        />
-                    </Routes>
-                </main>
-            </div>
-        </Router>
+                    {/* Photographer Dashboard */}
+                    <Route
+                        path="/photographer-dashboard"
+                        element={
+                            <ProtectedRoute allowedUserType="photographer">
+                                <DashboardLayout>
+                                    <PhotographerDashboard />
+                                </DashboardLayout>
+                            </ProtectedRoute>
+                        }
+                    />
+                </Routes>
+            </Router>
+        </ThemeProvider>
     );
 };
 
