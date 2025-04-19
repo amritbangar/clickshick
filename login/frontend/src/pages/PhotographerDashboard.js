@@ -1814,28 +1814,39 @@ const PhotographerDashboard = () => {
 
         {/* Stats Summary */}
         <div className="row mx-2 mb-4">
-          {/* Total Bookings Tile */}
+          {/* Total Sessions Tile */}
           <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
             <div className="card h-100" style={{
-              background: 'linear-gradient(135deg, #0396FF, #0D47A1)',
+              background: 'linear-gradient(135deg, #2C4A59 0%, #3A5F6F 100%)',
               borderRadius: '15px',
               border: 'none',
-              boxShadow: '0 4px 20px rgba(3, 150, 255, 0.15)'
-            }}>
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              transition: 'transform 0.3s ease',
+              cursor: 'pointer',
+              transform: 'translateY(0)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
               <div className="card-body">
                 <div className="d-flex align-items-center justify-content-between mb-3">
                   <div className="d-flex align-items-center">
                     <div style={{
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      borderRadius: '12px',
-                      padding: '10px',
-                      marginRight: '15px'
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      borderRadius: '50%',
+                      padding: '15px',
+                      marginRight: '15px',
+                      width: '55px',
+                      height: '55px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}>
-                      <i className="fas fa-calendar-check" style={{ fontSize: '24px', color: 'white' }}></i>
+                      <i className="fas fa-camera" style={{ fontSize: '24px', color: 'white' }}></i>
                     </div>
                     <div>
-                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>Total Bookings</h6>
+                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: '500' }}>Total Sessions</h6>
                       <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>{bookings.length}</h2>
+                      <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', margin: '0' }}>All time bookings</p>
                     </div>
                   </div>
                 </div>
@@ -1846,27 +1857,38 @@ const PhotographerDashboard = () => {
           {/* Confirmed Tile */}
           <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
             <div className="card h-100" style={{
-              background: 'linear-gradient(135deg, #4CAF50, #2E7D32)',
+              background: 'linear-gradient(135deg, #1D3D4E 0%, #2C4A59 100%)',
               borderRadius: '15px',
               border: 'none',
-              boxShadow: '0 4px 20px rgba(76, 175, 80, 0.15)'
-            }}>
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              transition: 'transform 0.3s ease',
+              cursor: 'pointer',
+              transform: 'translateY(0)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
               <div className="card-body">
                 <div className="d-flex align-items-center justify-content-between mb-3">
                   <div className="d-flex align-items-center">
                     <div style={{
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      borderRadius: '12px',
-                      padding: '10px',
-                      marginRight: '15px'
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      borderRadius: '50%',
+                      padding: '15px',
+                      marginRight: '15px',
+                      width: '55px',
+                      height: '55px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}>
                       <i className="fas fa-check-circle" style={{ fontSize: '24px', color: 'white' }}></i>
                     </div>
                     <div>
-                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>Confirmed</h6>
+                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: '500' }}>Confirmed</h6>
                       <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
                         {bookings.filter(b => b.decision?.toLowerCase() === 'confirmed').length}
                       </h2>
+                      <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', margin: '0' }}>Accepted bookings</p>
                     </div>
                   </div>
                 </div>
@@ -1874,30 +1896,41 @@ const PhotographerDashboard = () => {
             </div>
           </div>
 
-          {/* Likely Tile */}
+          {/* Interested In Tile */}
           <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
             <div className="card h-100" style={{
-              background: 'linear-gradient(135deg, #FFB64D, #F09819)',
+              background: 'linear-gradient(135deg, #3A5F6F 0%, #4A6F7F 100%)',
               borderRadius: '15px',
               border: 'none',
-              boxShadow: '0 4px 20px rgba(255, 182, 77, 0.15)'
-            }}>
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              transition: 'transform 0.3s ease',
+              cursor: 'pointer',
+              transform: 'translateY(0)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
               <div className="card-body">
                 <div className="d-flex align-items-center justify-content-between mb-3">
                   <div className="d-flex align-items-center">
                     <div style={{
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      borderRadius: '12px',
-                      padding: '10px',
-                      marginRight: '15px'
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      borderRadius: '50%',
+                      padding: '15px',
+                      marginRight: '15px',
+                      width: '55px',
+                      height: '55px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}>
                       <i className="fas fa-star" style={{ fontSize: '24px', color: 'white' }}></i>
                     </div>
                     <div>
-                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>Likely</h6>
+                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: '500' }}>Interested In</h6>
                       <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
                         {bookings.filter(b => b.decision?.toLowerCase() === 'likely').length}
                       </h2>
+                      <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', margin: '0' }}>Shown interest</p>
                     </div>
                   </div>
                 </div>
@@ -1905,30 +1938,41 @@ const PhotographerDashboard = () => {
             </div>
           </div>
 
-          {/* Pending Tile */}
+          {/* Completed Tile */}
           <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
             <div className="card h-100" style={{
-              background: 'linear-gradient(135deg, #00BCD4, #008394)',
+              background: 'linear-gradient(135deg, #2C4A59 0%, #3A5F6F 100%)',
               borderRadius: '15px',
               border: 'none',
-              boxShadow: '0 4px 20px rgba(0, 188, 212, 0.15)'
-            }}>
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              transition: 'transform 0.3s ease',
+              cursor: 'pointer',
+              transform: 'translateY(0)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
               <div className="card-body">
                 <div className="d-flex align-items-center justify-content-between mb-3">
                   <div className="d-flex align-items-center">
                     <div style={{
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      borderRadius: '12px',
-                      padding: '10px',
-                      marginRight: '15px'
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      borderRadius: '50%',
+                      padding: '15px',
+                      marginRight: '15px',
+                      width: '55px',
+                      height: '55px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}>
-                      <i className="fas fa-clock" style={{ fontSize: '24px', color: 'white' }}></i>
+                      <i className="fas fa-trophy" style={{ fontSize: '24px', color: 'white' }}></i>
                     </div>
                     <div>
-                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>Pending</h6>
+                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: '500' }}>Completed</h6>
                       <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                        {bookings.filter(b => b.decision?.toLowerCase() === 'pending').length}
+                        {bookings.filter(b => b.status?.toLowerCase() === 'completed').length}
                       </h2>
+                      <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', margin: '0' }}>Finished sessions</p>
                     </div>
                   </div>
                 </div>

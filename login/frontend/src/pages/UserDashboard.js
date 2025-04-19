@@ -1247,7 +1247,7 @@ const UserDashboard = () => {
                                     <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
                                         <div className="card h-100 border-0 shadow-sm" style={{
                                             borderRadius: '15px',
-                                            background: 'linear-gradient(135deg, #28a745 0%, #5cc990 100%)',
+                                            background: 'linear-gradient(135deg, #3A5F6F 0%, #5C90A3 100%)',
                                             transition: 'transform 0.3s ease',
                                             cursor: 'pointer'
                                         }}
@@ -1278,7 +1278,7 @@ const UserDashboard = () => {
                                     <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
                                         <div className="card h-100 border-0 shadow-sm" style={{
                                             borderRadius: '15px',
-                                            background: 'linear-gradient(135deg, #ffc107 0%, #ffd75e 100%)',
+                                            background: 'linear-gradient(135deg, #7EA8B9 0%, #9FB8C6 100%)',
                                             transition: 'transform 0.3s ease',
                                             cursor: 'pointer'
                                         }}
@@ -1309,7 +1309,7 @@ const UserDashboard = () => {
                                     <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
                                         <div className="card h-100 border-0 shadow-sm" style={{
                                             borderRadius: '15px',
-                                            background: 'linear-gradient(135deg, #17a2b8 0%, #45cadd 100%)',
+                                            background: 'linear-gradient(135deg, #9FB8C6 0%, #BFD1DA 100%)',
                                             transition: 'transform 0.3s ease',
                                             cursor: 'pointer'
                                         }}
