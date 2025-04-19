@@ -261,7 +261,7 @@ const Home = () => {
       <nav style={{
         position: 'sticky',
         top: 0,
-        backgroundColor: 'var(--primary-color)',
+        backgroundColor: '#7DA5B9',
         padding: '15px 40px',
         display: 'flex',
         justifyContent: 'space-between',
@@ -273,7 +273,7 @@ const Home = () => {
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          color: 'var(--accent-color-2)',
+          color: '#FFFFFF',
           fontWeight: 'bold',
           fontSize: '1.5rem',
           cursor: 'pointer'
@@ -285,7 +285,7 @@ const Home = () => {
         {/* Navigation Links */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <a href="#features" style={{ 
-            color: 'var(--accent-color-2)',
+            color: '#FFFFFF',
             margin: '0 15px',
             textDecoration: 'none',
             opacity: 0.9,
@@ -296,7 +296,7 @@ const Home = () => {
             Features
           </a>
           <a href="#categories" style={{ 
-            color: 'var(--accent-color-2)',
+            color: '#FFFFFF',
             margin: '0 15px',
             textDecoration: 'none',
             opacity: 0.9,
@@ -313,8 +313,8 @@ const Home = () => {
                 onClick={handleDashboardAccess}
                 style={{ 
                   background: 'transparent',
-                  border: '1px solid var(--accent-color-1)',
-                  color: 'var(--accent-color-2)',
+                  border: '1px solid #FFFFFF',
+                  color: '#FFFFFF',
                   borderRadius: '6px',
                   padding: '8px 15px',
                   marginLeft: '15px',
@@ -329,8 +329,8 @@ const Home = () => {
               <button 
                 onClick={handleSignOut}
                 style={{ 
-                  backgroundColor: 'var(--accent-color-1)',
-                  color: 'var(--primary-color)',
+                  backgroundColor: '#BFD8E4',
+                  color: '#1F1F1F',
                   border: 'none',
                   borderRadius: '6px',
                   padding: '8px 15px',
@@ -339,8 +339,14 @@ const Home = () => {
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-color-2)'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-color-1)'}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#A6C7D8';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#BFD8E4';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
               >
                 Sign Out
               </button>
@@ -351,8 +357,8 @@ const Home = () => {
                 onClick={handleSignIn}
                 style={{ 
                   background: 'transparent',
-                  border: '1px solid var(--accent-color-1)',
-                  color: 'var(--accent-color-2)',
+                  border: '1px solid #FFFFFF',
+                  color: '#FFFFFF',
                   borderRadius: '6px',
                   padding: '8px 15px',
                   marginLeft: '15px',
@@ -367,8 +373,8 @@ const Home = () => {
               <button 
                 onClick={handleSignUpClick}
                 style={{ 
-                  backgroundColor: 'var(--accent-color-1)',
-                  color: 'var(--primary-color)',
+                  backgroundColor: '#BFD8E4',
+                  color: '#1F1F1F',
                   border: 'none',
                   borderRadius: '6px',
                   padding: '8px 15px',
@@ -377,8 +383,14 @@ const Home = () => {
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-color-2)'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-color-1)'}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#A6C7D8';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#BFD8E4';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
               >
                 Sign Up
               </button>
@@ -387,10 +399,10 @@ const Home = () => {
         </div>
       </nav>
 
-      {/* Hero Section - Updated to match Bark.com style */}
+      {/* Hero Section - Updated to White + Cool Mist Blue Theme */}
       <div style={{ 
-        background: `linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color-1) 100%)`,
-        color: 'var(--accent-color-2)',
+        background: '#FFFFFF',
+        color: '#1F1F1F',
         minHeight: '85vh',
         display: 'flex',
         flexDirection: 'column',
@@ -399,7 +411,8 @@ const Home = () => {
         textAlign: 'center',
         position: 'relative',
         padding: '70px 20px 40px 20px',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        borderBottom: '1px solid #C5D3DC'
       }}>
         {/* Enhanced background pattern with animation */}
         <div style={{
@@ -408,102 +421,13 @@ const Home = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px), radial-gradient(rgba(255, 255, 255, 0.1) 2px, transparent 2px)',
+          backgroundImage: 'radial-gradient(rgba(125, 165, 185, 0.15) 1px, transparent 1px), radial-gradient(rgba(125, 165, 185, 0.1) 2px, transparent 2px)',
           backgroundSize: '20px 20px, 30px 30px',
           backgroundPosition: '0 0, 15px 15px',
           animation: 'backgroundShift 30s linear infinite',
-          opacity: 0.7,
+          opacity: 0.5,
           zIndex: 0
         }} />
-        
-        {/* Abstract Photo Frame Overlays */}
-        <div style={{
-          position: 'absolute',
-          right: '5%',
-          bottom: '5%',
-          width: '150px',
-          height: '150px',
-          border: '3px solid rgba(255, 255, 255, 0.1)',
-          transform: 'rotate(15deg)',
-          zIndex: 0,
-          animation: 'float 20s ease-in-out infinite'
-        }} />
-        
-        <div style={{
-          position: 'absolute',
-          left: '8%',
-          top: '15%',
-          width: '100px',
-          height: '100px',
-          border: '3px solid rgba(255, 255, 255, 0.08)',
-          transform: 'rotate(-10deg)',
-          zIndex: 0,
-          animation: 'float 25s ease-in-out infinite',
-          animationDelay: '2s'
-        }} />
-        
-        {/* Camera shutter overlay */}
-        <div style={{
-          position: 'absolute',
-          left: '75%',
-          top: '20%',
-          width: '80px',
-          height: '80px',
-          borderRadius: '50%',
-          border: '5px solid rgba(255, 255, 255, 0.05)',
-          boxShadow: 'inset 0 0 20px rgba(255, 255, 255, 0.05)',
-          zIndex: 0,
-          animation: 'pulse 5s ease-in-out infinite'
-        }} />
-        
-        {/* Add floating photography-related elements */}
-        <div className="floating-elements" style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-          {[...Array(8)].map((_, index) => (
-            <div 
-              key={index}
-              style={{
-                position: 'absolute',
-                width: `${Math.random() * 40 + 20}px`,
-                height: `${Math.random() * 40 + 20}px`,
-                borderRadius: '50%',
-                backgroundColor: `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.1)`,
-                backdropFilter: 'blur(2px)',
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `float ${Math.random() * 10 + 15}s linear infinite`,
-                animationDelay: `${Math.random() * 5}s`,
-                zIndex: 0
-              }}
-            />
-          ))}
-          
-          {/* Camera icon floating element */}
-          <div style={{
-            position: 'absolute',
-            left: '15%',
-            top: '25%',
-            fontSize: '1.5rem',
-            opacity: 0.2,
-            animation: 'floatUpDown 8s ease-in-out infinite',
-            zIndex: 0
-          }}>
-            📸
-          </div>
-          
-          {/* Photo frame icon floating element */}
-          <div style={{
-            position: 'absolute',
-            right: '20%',
-            top: '30%',
-            fontSize: '1.8rem',
-            opacity: 0.2,
-            animation: 'floatUpDown 12s ease-in-out infinite',
-            animationDelay: '2s',
-            zIndex: 0
-          }}>
-            🖼️
-          </div>
-        </div>
         
         {/* Hero content */}
         <div style={{ maxWidth: '800px', zIndex: 1, position: 'relative' }}>
@@ -511,9 +435,8 @@ const Home = () => {
             fontSize: '3.2rem', 
             fontWeight: 'bold', 
             marginBottom: '20px',
-            color: 'var(--accent-color-2)',
-            lineHeight: 1.2,
-            textShadow: '0 2px 10px rgba(0,0,0,0.3)'
+            color: '#1F1F1F',
+            lineHeight: 1.2
           }}>
             Find the best <br/> photographers in your area
           </h1>
@@ -522,8 +445,7 @@ const Home = () => {
             fontSize: '1.2rem', 
             lineHeight: '1.6',
             marginBottom: '20px',
-            color: 'var(--accent-color-1)',
-            textShadow: '0 1px 5px rgba(0,0,0,0.3)'
+            color: '#666666'
           }}>
             Get free quotes within minutes
           </p>
@@ -531,8 +453,8 @@ const Home = () => {
           <button 
             onClick={handleSignUpClick}
             style={{ 
-              backgroundColor: 'var(--accent-color-2)', 
-              color: 'var(--primary-color)',
+              backgroundColor: '#7DA5B9', 
+              color: '#FFFFFF',
               border: 'none',
               borderRadius: '30px',
               padding: '15px 35px', 
@@ -543,81 +465,34 @@ const Home = () => {
               transition: 'all 0.3s ease'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--accent-color-1)';
+              e.currentTarget.style.backgroundColor = '#5C90A3';
               e.currentTarget.style.transform = 'translateY(-2px)';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--accent-color-2)';
+              e.currentTarget.style.backgroundColor = '#7DA5B9';
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
             Get Started Now
           </button>
         </div>
-
-        {/* Add subtle particle effect */}
-        <div className="particles-container" style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-          {[...Array(20)].map((_, index) => (
-            <div 
-              key={`particle-${index}`}
-              className="particle"
-              style={{
-                position: 'absolute',
-                width: `${Math.random() * 5 + 1}px`,
-                height: `${Math.random() * 5 + 1}px`,
-                backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                borderRadius: '50%',
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `particle-float ${Math.random() * 30 + 20}s linear infinite`,
-                animationDelay: `${Math.random() * 10}s`,
-                zIndex: 0
-              }}
-            />
-          ))}
-        </div>
-        
-        {/* Add subtle lens flare effect */}
-        <div style={{
-          position: 'absolute',
-          top: '-150px',
-          right: '-150px',
-          width: '300px',
-          height: '300px',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)',
-          borderRadius: '50%',
-          zIndex: 0,
-          animation: 'flare-movement 15s ease-in-out infinite'
-        }}></div>
-        
-        <div style={{
-          position: 'absolute',
-          bottom: '10%',
-          left: '5%',
-          width: '150px',
-          height: '150px',
-          background: 'radial-gradient(circle, rgba(255,165,0,0.1) 0%, rgba(255,165,0,0) 70%)',
-          borderRadius: '50%',
-          zIndex: 0,
-          animation: 'flare-pulse 8s ease-in-out infinite'
-        }}></div>
       </div>
 
       {/* Features Section */}
-      <section id="features" style={{ padding: "80px 0", backgroundColor: "var(--accent-color-1)" }}>
+      <section id="features" style={{ padding: "80px 0", backgroundColor: "#DCE7EE" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px" }}>
           <div style={{ textAlign: "center", marginBottom: "60px" }}>
             <h2 style={{ 
               fontSize: "2.5rem", 
               fontWeight: "bold", 
-              color: "var(--primary-color)", 
+              color: "#1F1F1F", 
               marginBottom: "15px" 
             }}>
               Why Choose Our Platform
             </h2>
             <p style={{ 
               fontSize: "1.2rem", 
-              color: "var(--secondary-color-1)", 
+              color: "#666666", 
               maxWidth: "700px", 
               margin: "0 auto" 
             }}>
@@ -635,23 +510,23 @@ const Home = () => {
               <div key={index} style={{ 
                 flex: "1 1 250px", 
                 maxWidth: "280px",
-                backgroundColor: "var(--accent-color-2)",
+                backgroundColor: "#FFFFFF",
                 borderRadius: "8px",
                 padding: "30px 25px",
-                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)",
+                transition: "transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease",
                 cursor: "pointer",
-                border: `1px solid var(--border-color)`
+                border: `1px solid #C5D3DC`
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.transform = "translateY(-8px)";
                 e.currentTarget.style.boxShadow = "0 20px 25px -5px rgba(0, 0, 0, 0.1)";
-                e.currentTarget.style.borderColor = "var(--primary-color)";
+                e.currentTarget.style.backgroundColor = "#DCE7EE";
               }}
               onMouseOut={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(0, 0, 0, 0.1)";
-                e.currentTarget.style.borderColor = "var(--border-color)";
+                e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(0, 0, 0, 0.05)";
+                e.currentTarget.style.backgroundColor = "#FFFFFF";
               }}
               onClick={handleSignUpClick}
               >
@@ -666,14 +541,14 @@ const Home = () => {
                   fontSize: "1.5rem", 
                   fontWeight: "bold", 
                   marginBottom: "15px", 
-                  color: "var(--primary-color)",
+                  color: "#1F1F1F",
                   textAlign: "center"
                 }}>
                   {feature.title}
                 </h3>
                 <p style={{ 
                   fontSize: "1.05rem", 
-                  color: "var(--text-light)", 
+                  color: "#666666", 
                   lineHeight: "1.6",
                   textAlign: "center"
                 }}>
@@ -685,21 +560,21 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Update category browsing section like Bark.com */}
-      <section id="categories" style={{ padding: "60px 0", backgroundColor: "var(--accent-color-2)" }}>
+      {/* Categories section */}
+      <section id="categories" style={{ padding: "60px 0", backgroundColor: "#FFFFFF" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px" }}>
           <div style={{ textAlign: "center", marginBottom: "50px" }}>
             <h2 style={{ 
               fontSize: "2.2rem", 
               fontWeight: "bold", 
-              color: "var(--primary-color)", 
+              color: "#1F1F1F", 
               marginBottom: "15px" 
             }}>
               Discover Photography Services
             </h2>
             <p style={{ 
               fontSize: "1.1rem", 
-              color: "var(--secondary-color-1)", 
+              color: "#666666", 
               maxWidth: "700px", 
               margin: "0 auto" 
             }}>
@@ -724,8 +599,8 @@ const Home = () => {
               <div 
                 key={index} 
                 style={{ 
-                  backgroundColor: index % 2 === 0 ? "var(--accent-color-1)" : "var(--accent-color-2)",
-                  border: `1px solid ${index % 2 === 0 ? 'var(--border-color)' : 'var(--primary-color)'}`,
+                  backgroundColor: index % 2 === 0 ? "#DCE7EE" : "#FFFFFF",
+                  border: `1px solid #C5D3DC`,
                   borderRadius: "8px",
                   padding: "25px 20px",
                   transition: "all 0.3s ease",
@@ -735,10 +610,12 @@ const Home = () => {
                 onMouseOver={(e) => {
                   e.currentTarget.style.transform = "translateY(-5px)";
                   e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(0, 0, 0, 0.1)";
+                  e.currentTarget.style.backgroundColor = "#BFD8E4";
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.backgroundColor = index % 2 === 0 ? "#DCE7EE" : "#FFFFFF";
                 }}
                 onClick={handleSignUpClick}
               >
@@ -748,7 +625,7 @@ const Home = () => {
                 <h3 style={{ 
                   fontSize: "1.2rem", 
                   fontWeight: "bold", 
-                  color: "var(--primary-color)"
+                  color: "#1F1F1F"
                 }}>
                   {category.title}
                 </h3>
@@ -758,21 +635,21 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Add testimonials section like on Bark.com */}
-      <section style={{ padding: "70px 0", backgroundColor: "var(--primary-color)" }}>
+      {/* Testimonials section */}
+      <section style={{ padding: "70px 0", backgroundColor: "#7DA5B9" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px" }}>
           <div style={{ textAlign: "center", marginBottom: "50px" }}>
             <h2 style={{ 
               fontSize: "2.2rem", 
               fontWeight: "bold", 
-              color: "var(--accent-color-2)", 
+              color: "#FFFFFF", 
               marginBottom: "15px" 
             }}>
               What Our Clients Say
             </h2>
             <p style={{ 
               fontSize: "1.1rem", 
-              color: "var(--accent-color-1)", 
+              color: "#DCE7EE", 
               maxWidth: "700px", 
               margin: "0 auto" 
             }}>
@@ -802,11 +679,22 @@ const Home = () => {
               <div 
                 key={index} 
                 style={{ 
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  backgroundColor: "rgba(255, 255, 255, 0.15)",
                   borderRadius: "8px",
                   padding: "30px 25px",
                   transition: "transform 0.3s ease",
-                  position: "relative"
+                  position: "relative",
+                  border: "1px solid rgba(255, 255, 255, 0.3)"
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = "translateY(-5px)";
+                  e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(0, 0, 0, 0.2)";
+                  e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.25)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.15)";
                 }}
               >
                 <div style={{ 
@@ -815,13 +703,13 @@ const Home = () => {
                   top: "10px", 
                   left: "15px", 
                   opacity: 0.2,
-                  color: "var(--accent-color-2)"
+                  color: "#FFFFFF"
                 }}>
                   "
                 </div>
                 <p style={{ 
                   fontSize: "1.05rem", 
-                  color: "var(--accent-color-2)", 
+                  color: "#FFFFFF", 
                   lineHeight: "1.6",
                   position: "relative",
                   zIndex: 1,
@@ -832,7 +720,7 @@ const Home = () => {
                 <p style={{ 
                   fontSize: "1rem", 
                   fontWeight: "bold",
-                  color: "var(--accent-color-1)"
+                  color: "#DCE7EE"
                 }}>
                   {testimonial.name}
                 </p>

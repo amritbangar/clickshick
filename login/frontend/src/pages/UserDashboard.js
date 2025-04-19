@@ -694,18 +694,18 @@ const UserDashboard = () => {
                         title: 'Booking Declined',
                         message: notification.message
                     });
-        } else {
-            setAlertMessage({
-                type: 'info',
+                } else {
+                    setAlertMessage({
+                        type: 'info',
                         title: 'Notification',
-                message: notification.message
-            });
-        }
-        
-        // Auto-hide alert after 5 seconds
-        setTimeout(() => {
-            setAlertMessage(null);
-        }, 5000);
+                        message: notification.message
+                    });
+                }
+                
+                // Auto-hide alert after 5 seconds
+                setTimeout(() => {
+                    setAlertMessage(null);
+                }, 5000);
             }
 
             await axios.put(`http://localhost:8080/api/notifications/${notificationId}`, 
@@ -861,41 +861,65 @@ const UserDashboard = () => {
                 {/* Sidebar */}
                 <div style={{
                     width: '250px',
-                    backgroundColor: 'var(--secondary-color-1)',
-                    color: 'var(--accent-color-2)',
-                    padding: '20px 0'
+                    backgroundColor: '#5C90A3',
+                    padding: '20px 0',
+                    color: '#FFFFFF'
                 }}>
-                    <div style={{ padding: '0 20px', marginBottom: '30px' }}>
-                        <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem' }}>User Dashboard</h3>
-                        <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.8 }}>Manage your photo sessions</p>
+                    <div style={{ 
+                        margin: '0 20px 20px 20px', 
+                        borderBottom: '1px solid rgba(255,255,255,0.2)',
+                        padding: '0 0 16px 0',
+                    }}>
+                        <h3 style={{ 
+                            margin: '0 0 8px 0', 
+                            fontSize: '1.3rem', 
+                            color: '#FFFFFF', 
+                            fontWeight: 'bold',
+                            letterSpacing: '0.5px'
+                        }}>User Dashboard</h3>
+                        <p style={{ 
+                            margin: 0, 
+                            fontSize: '0.9rem', 
+                            color: '#FFFFFF',
+                            opacity: 0.9
+                        }}>Manage your photo sessions</p>
                     </div>
                     
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                         <li style={{
                             padding: '12px 20px',
-                            backgroundColor: activeTab === 'bookings' ? 'var(--primary-color)' : 'transparent',
+                            backgroundColor: activeTab === 'bookings' ? 'rgba(255,255,255,0.15)' : 'transparent',
                             cursor: 'pointer',
-                            transition: 'background-color 0.3s'
+                            transition: 'background-color 0.3s',
+                            color: '#FFFFFF',
+                            fontWeight: activeTab === 'bookings' ? 'bold' : 'normal',
+                            borderLeft: activeTab === 'bookings' ? '4px solid #FFFFFF' : '4px solid transparent',
                         }} onClick={() => setActiveTab('bookings')}>
-                            <i className="fas fa-calendar-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+                            <i className="fas fa-calendar-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center', color: '#FFFFFF' }}></i>
                             My Bookings
                         </li>
                         <li style={{
                             padding: '12px 20px',
-                            backgroundColor: activeTab === 'photographers' ? 'var(--primary-color)' : 'transparent',
+                            backgroundColor: activeTab === 'photographers' ? 'rgba(255,255,255,0.15)' : 'transparent',
                             cursor: 'pointer',
-                            transition: 'background-color 0.3s'
+                            transition: 'background-color 0.3s',
+                            color: '#FFFFFF',
+                            fontWeight: activeTab === 'photographers' ? 'bold' : 'normal',
+                            borderLeft: activeTab === 'photographers' ? '4px solid #FFFFFF' : '4px solid transparent',
                         }} onClick={() => setActiveTab('photographers')}>
-                            <i className="fas fa-camera" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+                            <i className="fas fa-camera" style={{ marginRight: '10px', width: '20px', textAlign: 'center', color: '#FFFFFF' }}></i>
                             Find Photographers
                         </li>
                         <li style={{
                             padding: '12px 20px',
-                            backgroundColor: activeTab === 'favorites' ? 'var(--primary-color)' : 'transparent',
+                            backgroundColor: activeTab === 'favorites' ? 'rgba(255,255,255,0.15)' : 'transparent',
                             cursor: 'pointer',
-                            transition: 'background-color 0.3s'
+                            transition: 'background-color 0.3s',
+                            color: '#FFFFFF',
+                            fontWeight: activeTab === 'favorites' ? 'bold' : 'normal',
+                            borderLeft: activeTab === 'favorites' ? '4px solid #FFFFFF' : '4px solid transparent',
                         }} onClick={() => setActiveTab('favorites')}>
-                            <i className="fas fa-heart" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+                            <i className="fas fa-heart" style={{ marginRight: '10px', width: '20px', textAlign: 'center', color: '#FFFFFF' }}></i>
                             Favorites
                         </li>
                         <li style={{
@@ -903,9 +927,12 @@ const UserDashboard = () => {
                             marginTop: '20px',
                             cursor: 'pointer',
                             transition: 'background-color 0.3s',
-                            color: 'var(--accent-color-1)'
+                            color: '#FFFFFF',
+                            fontWeight: 'normal',
+                            backgroundColor: 'transparent',
+                            borderTop: '1px solid rgba(255,255,255,0.2)',
                         }} onClick={handleLogout}>
-                            <i className="fas fa-sign-out-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+                            <i className="fas fa-sign-out-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center', color: '#FFFFFF' }}></i>
                             Logout
                         </li>
                     </ul>
@@ -995,7 +1022,7 @@ const UserDashboard = () => {
                                 <div className="row mx-2 mb-4">
                                     <div className="col-lg-3 col-md-6 mb-3">
                                         <div className="card shadow-sm text-white" style={{ 
-                                            backgroundColor: '#4E342E',
+                                            backgroundColor: '#5C90A3',
                                             borderRadius: '10px'
                                         }}>
                                             <div className="card-body">
@@ -1006,7 +1033,7 @@ const UserDashboard = () => {
                                     </div>
                                     <div className="col-lg-3 col-md-6 mb-3">
                                         <div className="card shadow-sm text-white" style={{ 
-                                            backgroundColor: '#4E342E',
+                                            backgroundColor: '#5C90A3',
                                             borderRadius: '10px'
                                         }}>
                                             <div className="card-body">
@@ -1017,7 +1044,7 @@ const UserDashboard = () => {
                                     </div>
                                     <div className="col-lg-3 col-md-6 mb-3">
                                         <div className="card shadow-sm text-white" style={{ 
-                                            backgroundColor: '#4E342E',
+                                            backgroundColor: '#5C90A3',
                                             borderRadius: '10px'
                                         }}>
                                             <div className="card-body">
@@ -1028,7 +1055,7 @@ const UserDashboard = () => {
                                     </div>
                                     <div className="col-lg-3 col-md-6 mb-3">
                                         <div className="card shadow-sm text-white" style={{ 
-                                            backgroundColor: '#4E342E',
+                                            backgroundColor: '#5C90A3',
                                             borderRadius: '10px'
                                         }}>
                                             <div className="card-body">

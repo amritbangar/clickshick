@@ -1268,45 +1268,69 @@ const PhotographerDashboard = () => {
         {/* Sidebar */}
         <div style={{
           width: '250px',
-          backgroundColor: 'var(--secondary-color-1)',
-          color: 'var(--accent-color-2)',
+          backgroundColor: '#5C90A3',
+          color: '#FFFFFF',
           padding: '20px 0',
-                  overflowY: 'auto',
+          overflowY: 'auto',
           height: 'calc(100vh - 70px)', // Subtract header height
           position: 'relative',
           zIndex: 10
         }}>
-          <div style={{ padding: '0 20px', marginBottom: '30px' }}>
-            <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem' }}>Photographer Dashboard</h3>
-            <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.8 }}>Manage your bookings</p>
-              </div>
+          <div style={{ 
+            margin: '0 20px 20px 20px', 
+            borderBottom: '1px solid rgba(255,255,255,0.2)',
+            padding: '0 0 16px 0',
+          }}>
+            <h3 style={{ 
+              margin: '0 0 8px 0', 
+              fontSize: '1.3rem', 
+              color: '#FFFFFF', 
+              fontWeight: 'bold',
+              letterSpacing: '0.5px'
+            }}>Photographer Dashboard</h3>
+            <p style={{ 
+              margin: 0, 
+              fontSize: '0.9rem', 
+              color: '#FFFFFF',
+              opacity: 0.9
+            }}>Manage your bookings</p>
+          </div>
               
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             <li style={{
               padding: '12px 20px',
-              backgroundColor: activeTab === 'bookings' ? 'var(--primary-color)' : 'transparent',
+              backgroundColor: activeTab === 'bookings' ? 'rgba(255,255,255,0.15)' : 'transparent',
               cursor: 'pointer',
-              transition: 'background-color 0.3s'
+              transition: 'background-color 0.3s',
+              color: '#FFFFFF',
+              fontWeight: activeTab === 'bookings' ? 'bold' : 'normal',
+              borderLeft: activeTab === 'bookings' ? '4px solid #FFFFFF' : '4px solid transparent',
             }} onClick={() => setActiveTab('bookings')}>
-              <i className="fas fa-calendar-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+              <i className="fas fa-calendar-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center', color: '#FFFFFF' }}></i>
               My Bookings
             </li>
             <li style={{
               padding: '12px 20px',
-              backgroundColor: activeTab === 'analytics' ? 'var(--primary-color)' : 'transparent',
+              backgroundColor: activeTab === 'analytics' ? 'rgba(255,255,255,0.15)' : 'transparent',
               cursor: 'pointer',
-              transition: 'background-color 0.3s'
+              transition: 'background-color 0.3s',
+              color: '#FFFFFF',
+              fontWeight: activeTab === 'analytics' ? 'bold' : 'normal',
+              borderLeft: activeTab === 'analytics' ? '4px solid #FFFFFF' : '4px solid transparent',
             }} onClick={() => setActiveTab('analytics')}>
-              <i className="fas fa-chart-bar" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+              <i className="fas fa-chart-bar" style={{ marginRight: '10px', width: '20px', textAlign: 'center', color: '#FFFFFF' }}></i>
               Analytics
             </li>
             <li style={{
               padding: '12px 20px',
-              backgroundColor: activeTab === 'profile' ? 'var(--primary-color)' : 'transparent',
+              backgroundColor: activeTab === 'profile' ? 'rgba(255,255,255,0.15)' : 'transparent',
               cursor: 'pointer',
-              transition: 'background-color 0.3s'
+              transition: 'background-color 0.3s',
+              color: '#FFFFFF',
+              fontWeight: activeTab === 'profile' ? 'bold' : 'normal',
+              borderLeft: activeTab === 'profile' ? '4px solid #FFFFFF' : '4px solid transparent',
             }} onClick={() => setActiveTab('profile')}>
-              <i className="fas fa-user" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+              <i className="fas fa-user" style={{ marginRight: '10px', width: '20px', textAlign: 'center', color: '#FFFFFF' }}></i>
               My Profile
             </li>
             <li style={{
@@ -1314,9 +1338,11 @@ const PhotographerDashboard = () => {
               backgroundColor: 'transparent',
               cursor: 'pointer',
               transition: 'background-color 0.3s',
-              color: currentPinCode ? 'var(--accent-color-1)' : 'var(--accent-color-2)'
+              color: '#FFFFFF',
+              fontWeight: 'normal',
+              borderLeft: '4px solid transparent',
             }} onClick={() => setShowPinCodePopup(true)}>
-              <i className="fas fa-filter" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+              <i className="fas fa-filter" style={{ marginRight: '10px', width: '20px', textAlign: 'center', color: '#FFFFFF' }}></i>
               Set Area Filter {currentPinCode && `(${currentPinCode})`}
             </li>
             <li style={{
@@ -1324,13 +1350,16 @@ const PhotographerDashboard = () => {
               marginTop: '20px',
               cursor: 'pointer',
               transition: 'background-color 0.3s',
-              color: 'var(--accent-color-1)'
+              color: '#FFFFFF',
+              fontWeight: 'normal',
+              backgroundColor: 'transparent',
+              borderTop: '1px solid rgba(255,255,255,0.2)',
             }} onClick={handleLogout}>
-              <i className="fas fa-sign-out-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center' }}></i>
+              <i className="fas fa-sign-out-alt" style={{ marginRight: '10px', width: '20px', textAlign: 'center', color: '#FFFFFF' }}></i>
               Logout
             </li>
           </ul>
-                              </div>
+        </div>
 
         {/* Main content */}
         <div style={{ 
@@ -1590,45 +1619,61 @@ const PhotographerDashboard = () => {
         <div className="row mx-2 mb-4">
           <div className="col-lg-3 col-md-6 mb-3">
             <div className="card shadow-sm text-white" style={{ 
-              backgroundColor: '#4E342E',
-              borderRadius: '10px'
+              backgroundColor: '#5C90A3',
+              borderRadius: '10px',
+              height: '120px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
             }}>
-              <div className="card-body">
-                <h5 className="card-title">Total Bookings</h5>
-                <h2>{bookings.length}</h2>
+              <div className="card-body text-center">
+                <h5 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '6px' }}>Total Bookings</h5>
+                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{bookings.length}</h2>
               </div>
             </div>
           </div>
           <div className="col-lg-3 col-md-6 mb-3">
             <div className="card shadow-sm text-white" style={{ 
-              backgroundColor: '#4E342E',
-              borderRadius: '10px'
+              backgroundColor: '#5C90A3',
+              borderRadius: '10px',
+              height: '120px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
             }}>
-              <div className="card-body">
-                <h5 className="card-title">Confirmed</h5>
-                <h2>{bookings.filter(b => b.decision?.toLowerCase() === 'confirmed').length}</h2>
+              <div className="card-body text-center">
+                <h5 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '6px' }}>Confirmed</h5>
+                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{bookings.filter(b => b.decision?.toLowerCase() === 'confirmed').length}</h2>
               </div>
             </div>
           </div>
           <div className="col-lg-3 col-md-6 mb-3">
             <div className="card shadow-sm text-white" style={{ 
-              backgroundColor: '#4E342E',
-              borderRadius: '10px'
+              backgroundColor: '#5C90A3',
+              borderRadius: '10px',
+              height: '120px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
             }}>
-              <div className="card-body">
-                <h5 className="card-title">Likely</h5>
-                <h2>{bookings.filter(b => b.decision?.toLowerCase() === 'likely').length}</h2>
+              <div className="card-body text-center">
+                <h5 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '6px' }}>Likely</h5>
+                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{bookings.filter(b => b.decision?.toLowerCase() === 'likely').length}</h2>
               </div>
             </div>
           </div>
           <div className="col-lg-3 col-md-6 mb-3">
             <div className="card shadow-sm text-white" style={{ 
-              backgroundColor: '#4E342E',
-              borderRadius: '10px'
+              backgroundColor: '#5C90A3',
+              borderRadius: '10px',
+              height: '120px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
             }}>
-              <div className="card-body">
-                <h5 className="card-title">Pending</h5>
-                <h2>{bookings.filter(b => b.decision?.toLowerCase() === 'pending').length}</h2>
+              <div className="card-body text-center">
+                <h5 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '6px' }}>Pending</h5>
+                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{bookings.filter(b => b.decision?.toLowerCase() === 'pending').length}</h2>
               </div>
             </div>
           </div>
@@ -1644,8 +1689,9 @@ const PhotographerDashboard = () => {
                   onClick={() => setActiveTab('bookings')}
                   style={{ 
                     fontWeight: 'bold',
-                    color: activeTab === 'bookings' ? '#6200ea' : '#6c757d',
-                    borderBottom: activeTab === 'bookings' ? '3px solid #6200ea' : 'none'
+                    color: activeTab === 'bookings' ? 'var(--primary-color)' : '#6c757d',
+                    borderBottom: activeTab === 'bookings' ? '3px solid var(--primary-color)' : 'none',
+                    backgroundColor: activeTab === 'bookings' ? 'var(--accent-color-1)' : 'white'
                   }}
                 >
                   <i className="fas fa-list-alt me-2"></i>
@@ -1658,8 +1704,9 @@ const PhotographerDashboard = () => {
                   onClick={() => setActiveTab('analytics')}
                   style={{ 
                     fontWeight: 'bold',
-                    color: activeTab === 'analytics' ? '#6200ea' : '#6c757d',
-                    borderBottom: activeTab === 'analytics' ? '3px solid #6200ea' : 'none'
+                    color: activeTab === 'analytics' ? 'var(--primary-color)' : '#6c757d',
+                    borderBottom: activeTab === 'analytics' ? '3px solid var(--primary-color)' : 'none',
+                    backgroundColor: activeTab === 'analytics' ? 'var(--accent-color-1)' : 'white'
                   }}
                 >
                   <i className="fas fa-chart-pie me-2"></i>

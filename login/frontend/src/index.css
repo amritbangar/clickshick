@@ -7,24 +7,26 @@
 }
 
 :root {
-  /* Unified Theme & Color Palette */
-  --primary-color: #66493A; /* Bark Brown */
-  --secondary-color-1: #755B4E; /* Warm Taupe */
-  --secondary-color-2: #856D61; /* Dusty Rose */
-  --accent-color-1: #E0DBD8; /* Soft Gray */
-  --accent-color-2: #FFFFFF; /* White */
+  /* White + Cool Mist Blue Theme */
+  --primary-color: #7DA5B9; /* Icons/Highlights */
+  --secondary-color-1: #BFD8E4; /* Accent Blue (Darker) */
+  --secondary-color-2: #A6C7D8; /* Button Hover */
+  --accent-color-1: #DCE7EE; /* Misty blue section background */
+  --accent-color-2: #FFFFFF; /* Clean white background */
   
   /* Additional derived colors */
-  --primary-dark: #4d3729; /* Darker version of primary for hover states */
-  --primary-light: #8a7267; /* Lighter version of primary */
+  --primary-dark: #5C90A3; /* Deeper shade for contrast */
+  --primary-light: #BFD8E4; /* Lighter accent blue */
   --text-on-primary: #FFFFFF; /* Text color on primary background */
-  --text-dark: #333333; /* Dark text */
-  --text-light: #777777; /* Light text */
-  --border-color: #d1c9c4; /* Border color derived from palette */
+  --text-dark: #1F1F1F; /* Primary Text - Dark charcoal */
+  --text-light: #666666; /* Secondary Text - Muted */
+  --border-color: #C5D3DC; /* Soft subtle border tone */
   --success-color: #4CAF50; /* Success color */
   --warning-color: #FFC107; /* Warning color */
   --danger-color: #F44336; /* Danger color */
   --info-color: #2196F3; /* Info color */
+  --accent-pop: #5C90A3; /* Deeper blue for emphasis */
+  --hover-color: #DCE7EE; /* Hover effect background */
 }
 
 label{
@@ -89,7 +91,7 @@ body{
 }
 
 button{
-  background-color: purple;
+  background-color: #000000;
   border: none;
   font-size: 20px;
   color: white;
@@ -292,35 +294,27 @@ code {
 }
 
 .btn-primary {
-  background-color: var(--accent-color-1);
-  color: var(--primary-color);
+  background-color: #000000;
+  color: #FFFFFF;
   border: none;
-  border-radius: 6px;
-  padding: 10px 18px;
-  font-weight: bold;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .btn-primary:hover {
-  background-color: var(--accent-color-2);
+  background-color: #2A2A2A;
+  transform: translateY(-2px);
 }
 
 .btn-secondary {
-  background-color: transparent;
-  color: var(--accent-color-2);
-  border: 1px solid var(--accent-color-1);
-  border-radius: 6px;
-  padding: 9px 18px;
-  font-weight: 500;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  background-color: #FFFFFF;
+  color: #000000;
+  border: 1px solid #000000;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .btn-secondary:hover {
-  background-color: rgba(255,255,255,0.1);
+  background-color: #F5F5F5;
+  transform: translateY(-2px);
 }
 
 .hero-section {
