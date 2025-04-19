@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PhotographerPopup from './PhotographerPopup';
 import axios from 'axios';
+import QuotationDetails from '../components/QuotationDetails';
 
 const UserDashboard = () => {
     const [showPopup, setShowPopup] = useState(false);
@@ -16,6 +17,7 @@ const UserDashboard = () => {
     const [showNotifications, setShowNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const [alertMessage, setAlertMessage] = useState(null);
+    const [selectedNotification, setSelectedNotification] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -220,20 +222,16 @@ const UserDashboard = () => {
         try {
             console.log("Form data received in UserDashboard:", formData);
             
-            // Make sure we have the pin code - log it to help with debugging
-            if (formData.pinCode) {
-                console.log(`Booking has pin code: ${formData.pinCode}`);
-            } else {
+            if (!formData.pinCode) {
                 console.warn("Warning: Booking doesn't have a PIN code!");
                 setAlertMessage({
                     type: 'warning',
                     title: 'Missing PIN Code',
                     message: 'Your booking does not have a PIN code. Photographers may not be able to find it.'
                 });
-                return; // Prevent submission without pin code
+                return;
             }
             
-            // Validate contact number
             if (!formData.contactNumber || formData.contactNumber.length !== 10) {
                 console.warn("Warning: Invalid contact number!");
                 setAlertMessage({
@@ -241,20 +239,17 @@ const UserDashboard = () => {
                     title: 'Invalid Contact Number',
                     message: 'Please provide a valid 10-digit contact number.'
                 });
-                return; // Prevent submission without valid contact number
+                return;
             }
             
-            // Get the user ID and user data from localStorage or state
             const userId = localStorage.getItem('userId');
             const userName = user?.name || localStorage.getItem('userName') || 'Anonymous User';
             
-            // Get user contact information from state or form data
             const contactInfo = {
                 email: user?.email || localStorage.getItem('userEmail') || 'Not provided',
                 phone: formData.contactNumber || 'Not provided'
             };
             
-            // Add user ID, name, and contact info to the booking data
             const bookingData = {
                 ...formData,
                 userId,
@@ -273,22 +268,79 @@ const UserDashboard = () => {
             
             if (response.status === 201) {
                 console.log("Booking saved successfully!", response.data);
+                const newBookingId = response.data._id;
+                console.log("New booking ID:", newBookingId);
                 
-                // Save the pin code to localStorage for future use
                 if (formData.pinCode) {
                     localStorage.setItem('lastUsedPinCode', formData.pinCode);
                 }
                 
-                // Show success alert message instead of using window.alert
+                // Show success alert
                 setAlertMessage({
                     type: 'success',
-                    title: 'Booking Saved!',
-                    message: 'Your booking request has been submitted successfully and photographers in your area will be notified.'
+                    title: 'Booking Created!',
+                    message: 'Your booking request has been submitted successfully. Photographers will be notified and can show their interest.'
                 });
                 
-                // Auto-hide alert after 5 seconds
-                setTimeout(() => {
-                    setAlertMessage(null);
+                // For testing: Simulate a photographer showing interest after 5 seconds
+                setTimeout(async () => {
+                    const testPhotographer = {
+                        id: '2',
+                        name: 'Priya Patel',
+                        specialization: 'Fashion Photography'
+                    };
+                    
+                    try {
+                        console.log("Creating notification for photographer interest with booking ID:", newBookingId);
+                        
+                        // Create a notification for photographer's interest
+                        const notificationResponse = await axios.post('http://localhost:8080/api/notifications', {
+                            userId: userId,
+                            photographerId: testPhotographer.id,
+                            photographerName: testPhotographer.name,
+                            message: `${testPhotographer.name} has shown interest in your ${formData.photographyType} booking.`,
+                            type: 'photographer_interest',
+                            bookingId: newBookingId, // Use the new booking ID
+                            bookingType: formData.photographyType,
+                            bookingDetails: {
+                                id: newBookingId,
+                                type: formData.photographyType,
+                                location: formData.location,
+                                date: formData.date
+                            }
+                        }, {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('token')}`
+                            }
+                        });
+
+                        console.log("Notification created:", notificationResponse.data);
+
+                        // Update the booking with interested photographer
+                        await axios.put(`http://localhost:8080/api/bookings/${newBookingId}/interested`, {
+                            photographerId: testPhotographer.id,
+                            photographerName: testPhotographer.name
+                        }, {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem('token')}`
+                            }
+                        });
+
+                        // Show notification alert
+                        setAlertMessage({
+                            type: 'info',
+                            title: 'New Interest!',
+                            message: `${testPhotographer.name} has shown interest in your booking. Check notifications to accept or decline.`
+                        });
+
+                        // Refresh notifications and bookings
+                        await Promise.all([
+                            fetchNotifications(),
+                            fetchData()
+                        ]);
+                    } catch (error) {
+                        console.error('Error simulating photographer interest:', error);
+                    }
                 }, 5000);
                 
                 fetchData(); // Refresh bookings after new booking
@@ -308,7 +360,7 @@ const UserDashboard = () => {
                 message: 'Failed to save booking. Please try again.'
             });
         } finally {
-            setShowPopup(false); // Close the popup after submission
+            setShowPopup(false);
         }
     };
 
@@ -421,291 +473,171 @@ const UserDashboard = () => {
         setShowPopup(true);
     };
 
-    // Add an immediate notification to test the UI without showing alerts
+    // Update the useEffect hook to remove mock notifications
     useEffect(() => {
-        // Get actual photographers to use in notifications
-        const actualPhotographers = generateMockPhotographers();
-        const rahulSharma = actualPhotographers[0]; // This will be Rahul Sharma based on the mock data
+        // Initial fetch of notifications and data
+        fetchNotifications();
+        fetchData();
         
-        // Initialize with mock notification data for development
-        const mockNotifications = [
-            {
-                _id: '1',
-                message: `Your booking has been accepted by ${rahulSharma.name}. Your session is now confirmed!`,
-                createdAt: new Date().toISOString(),
-                isRead: false,
-                type: 'booking_accepted',
-                bookingId: '1', // Match with first booking id in mock data
-                photographerId: rahulSharma.id,
-                photographerName: rahulSharma.name
-            },
-            {
-                _id: '2',
-                message: 'New photography portfolio added by Priya Patel that matches your interests.',
-                createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-                isRead: true,
-                type: 'new_portfolio'
-            },
-            {
-                _id: '3',
-                message: 'Your booking request for Portrait Photography has been received.',
-                createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-                isRead: true,
-                type: 'booking_received'
-            }
-        ];
-        
-        // We don't need to modify the bookings here since they'll be set 
-        // with the correct photographer name from generateMockBookings
-
-        setNotifications(mockNotifications);
-        setUnreadCount(mockNotifications.filter(notif => !notif.isRead).length);
-        
-        // Process the unread notification but DO NOT show alert
-        const unreadNotification = mockNotifications.find(notif => !notif.isRead);
-        if (unreadNotification) {
-            // Update booking status without showing alert
-            showNotificationAlert(unreadNotification);
-        }
-
-        // Add a mock favorite photographer
-        const mockFavorite = {
-            id: '2',
-            name: 'Priya Patel',
-            specialization1: 'Fashion',
-            specialization2: 'Corporate',
-            experience: '6+ years',
-            rating: 4.8,
-            priceRange: '₹25,000 - ₹45,000',
-            location: 'Mumbai',
-            portfolio: '#',
-            profileImage: require('../image/photo2.jpg'),
-            bio: 'Specializing in high-end fashion and commercial photography with a unique contemporary style that has been featured in leading magazines.'
-        };
-        setFavoritePhotographers([mockFavorite]);
-
-        // Setup polling for new notifications (after initial mock data is set)
+        // Setup polling for new notifications
         const notificationInterval = setInterval(() => {
             fetchNotifications();
-        }, 30000); // Check every 30 seconds
+            fetchData(); // Also refresh booking data to keep interested photographers count updated
+        }, 30000);
 
-        // Cleanup interval on component unmount
         return () => clearInterval(notificationInterval);
-    }, []); // Only run once on component mount
+    }, []);
 
-    // Toggle notification dropdown
-    const toggleNotifications = () => {
-        // If we're opening the dropdown, make sure we have notifications to show
-        if (!showNotifications) {
-            fetchNotifications();
-        }
-        setShowNotifications(!showNotifications);
-    };
-
-    // Modified fetchNotifications to remove automatic alerts
+    // Update the fetchNotifications function to include quotation data
     const fetchNotifications = async () => {
         try {
             const userId = localStorage.getItem('userId');
             if (!userId) return;
             
-            try {
-                // Attempt to fetch from API
+            console.log("Fetching notifications for user:", userId);
+            
                 const response = await axios.get(`http://localhost:8080/api/notifications?userId=${userId}`, {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem('token')}`
-                    },
-                    timeout: 3000 // Set a 3 second timeout to fail fast when server is down
-                });
+                }
+            });
+            
+            console.log("Raw notifications from server:", response.data);
+            
+            if (Array.isArray(response.data)) {
+                // First, get all bookings to ensure we have the latest data
+                await fetchData();
+                console.log("Current bookings:", bookings);
                 
-                if (Array.isArray(response.data) && response.data.length > 0) {
-                    // Check if we have new notifications
-                    const currentNotifications = notifications;
-                    const newNotifications = response.data;
+                // Format notifications to ensure they have all required data
+                const formattedNotifications = response.data.map(notification => {
+                    console.log("Processing notification:", notification);
                     
-                    // Find any new unread notifications that weren't in our previous list
-                    const brandNewNotifications = newNotifications.filter(
-                        newNotif => !newNotif.isRead && 
-                        !currentNotifications.some(oldNotif => oldNotif._id === newNotif._id)
-                    );
-                    
-                    // Update notifications state
-                    setNotifications(newNotifications);
-                    setUnreadCount(newNotifications.filter(notif => !notif.isRead).length);
-                    
-                    // Process new notifications for booking status updates, but DON'T show alerts
-                    if (brandNewNotifications.length > 0) {
-                        console.log("New notifications received:", brandNewNotifications);
+                    if (notification.type === 'photographer_interest') {
+                        // Find the associated booking
+                        const booking = bookings.find(b => {
+                            console.log("Comparing booking IDs:", {
+                                bookingId: notification.bookingId,
+                                currentId: b._id || b.id,
+                                match: b._id === notification.bookingId || b.id === notification.bookingId
+                            });
+                            return b._id === notification.bookingId || b.id === notification.bookingId;
+                        });
                         
-                        // Process booking accepted notification first if it exists
-                        const acceptedNotification = brandNewNotifications.find(
-                            notif => notif.type === 'booking_accepted'
-                        );
-                        
-                        if (acceptedNotification) {
-                            showNotificationAlert(acceptedNotification);
-                        } else if (brandNewNotifications.length > 0) {
-                            // Otherwise process the first new notification
-                            showNotificationAlert(brandNewNotifications[0]);
-                        }
-                        
-                        // Refresh bookings to get latest status
-                        fetchData();
-                    }
-                } else if (process.env.NODE_ENV === 'development') {
-                    // For development: simulate a new booking acceptance notification every 2 minutes
-                    // This ensures we can test the notification UI even without a backend
-                    const now = new Date();
-                    const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000); // 2 minutes ago
-                    const lastNotificationTime = localStorage.getItem('lastNotificationTime');
-                    
-                    if (!lastNotificationTime || new Date(lastNotificationTime) < twoMinutesAgo) {
-                        // Get a booking that's in pending status to simulate it being accepted
-                        const pendingBooking = bookings.find(b => b.status?.toLowerCase() === 'pending');
-                        
-                        if (pendingBooking) {
-                            // Try to find a real photographer from our list
-                            const availablePhotographers = photographers.length > 0 ? 
-                                photographers : generateMockPhotographers();
-                            
-                            // Select a random photographer from our photographers list
-                            const randomPhotographer = availablePhotographers[
-                                Math.floor(Math.random() * availablePhotographers.length)
-                            ];
-                            
-                            const photographerName = randomPhotographer.name;
-                            
-                            const mockAcceptedNotification = {
-                                _id: 'mock-' + Date.now(),
-                                message: `Your booking has been accepted by ${photographerName}. Your session is now confirmed!`,
-                                createdAt: new Date().toISOString(),
-                                isRead: false,
-                                type: 'booking_accepted',
-                                bookingId: pendingBooking.id || pendingBooking._id,
-                                photographerId: randomPhotographer.id || randomPhotographer._id,
-                                photographerName: photographerName
-                            };
-                            
-                            const updatedNotifications = [mockAcceptedNotification, ...notifications];
-                            setNotifications(updatedNotifications);
-                            setUnreadCount(updatedNotifications.filter(notif => !notif.isRead).length);
-                            
-                            // Process the notification but don't show alert
-                            showNotificationAlert(mockAcceptedNotification);
-                            
-                            // Store the time we showed this notification
-                            localStorage.setItem('lastNotificationTime', now.toISOString());
-                        }
-                    }
-                }
-            } catch (error) {
-                // Only log detailed errors during development, not in production
-                if (process.env.NODE_ENV === 'development') {
-                    console.error('Failed to fetch notifications from API:', error);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to process notifications:', error);
-        }
-    };
+                        console.log("Found associated booking:", booking);
 
-    // Function to show notification alert
-    const showNotificationAlert = (notification) => {
-        console.log("Processing notification:", notification);
-        
-        // Only update the booking status, DON'T show alert messages automatically
-        if (notification.type === 'booking_accepted') {
-            // Get photographer name directly from notification if available,
-            // otherwise extract it from the message
-            let photographerName = notification.photographerName;
-            
-            if (!photographerName) {
-                const messageRegex = /Your booking has been accepted by (.+?)\./;
-                const match = notification.message.match(messageRegex);
-                photographerName = match ? match[1] : 'Unknown';
-            }
-            
-            // Try to find the photographer in our list to get their rating
-            let photographerRating = 4.8; // Default rating
-            const matchedPhotographer = photographers.find(p => 
-                p.name === photographerName || p.id === notification.photographerId
-            );
-            
-            if (matchedPhotographer) {
-                photographerRating = matchedPhotographer.rating;
-            }
-            
-            // Update the corresponding booking status and photographer
-            if (notification.bookingId) {
-                const updatedBookings = bookings.map(booking => {
-                    // Check if this is the booking that was accepted
-                    if (booking.id === notification.bookingId || booking._id === notification.bookingId) {
-                        console.log(`Updating booking ${booking.id} status to Confirmed with photographer ${photographerName}`);
-                        return { 
-                            ...booking, 
-                            status: 'Confirmed', 
-                            photographer: photographerName,
-                            photographerRating: photographerRating
+                        const photographerName = notification.photographerDetails?.name || notification.photographerName || 'Unknown photographer';
+                        const bookingType = booking?.photographyType || notification.bookingType || 'photography session';
+                        
+                        // Create a default quotation if none exists
+                        const defaultQuotation = {
+                            packageType: booking?.photographyType || 'Standard Package',
+                            price: 0,
+                            description: 'Package details will be discussed',
+                            deliverables: {
+                                photos: 0,
+                                videos: 0,
+                                reels: 0,
+                                editedPhotos: 0,
+                                printedPhotos: 0,
+                                photoAlbum: false
+                            },
+                            timeframe: 'To be discussed',
+                            additionalServices: '',
+                            terms: 'Standard terms and conditions apply'
+                        };
+                        
+                        return {
+                            ...notification,
+                            message: `${photographerName} has submitted a quotation for your ${bookingType} booking. Click to view details.`,
+                            photographerId: notification.photographerId,
+                            photographerDetails: notification.photographerDetails || {
+                                name: photographerName,
+                                profileImage: notification.photographerImage,
+                                rating: notification.photographerRating || 4.5,
+                                location: notification.photographerLocation || 'Location not specified'
+                            },
+                            bookingId: notification.bookingId,
+                            bookingType,
+                            booking: booking,
+                            quotation: notification.quotation || defaultQuotation,
+                            showActions: !notification.isRead
                         };
                     }
-                    return booking;
+                    return notification;
                 });
                 
-                // Update state with the modified bookings
-                console.log("Updated bookings:", updatedBookings);
-                setBookings(updatedBookings);
+                console.log("Formatted notifications:", formattedNotifications);
                 
-                // Force a refresh to re-fetch data from server if possible
-                setTimeout(fetchData, 1000);
+                setNotifications(formattedNotifications);
+                setUnreadCount(formattedNotifications.filter(notif => !notif.isRead).length);
             }
-        } else if (notification.type === 'booking_rejected') {
-            // Update the corresponding booking status
-            if (notification.bookingId) {
-                const updatedBookings = bookings.map(booking => 
-                    booking.id === notification.bookingId || booking._id === notification.bookingId ? 
-                    { ...booking, status: 'Cancelled' } : booking
-                );
-                setBookings(updatedBookings);
-                
-                // Force a refresh to re-fetch data from server if possible
-                setTimeout(fetchData, 1000);
-            }
+        } catch (error) {
+            console.error('Failed to fetch notifications:', error);
         }
-        
-        // REMOVED: No longer automatically showing alert messages here
     };
 
-    // Mark notification as read - Modified to show alerts when clicked
+    // Update the handleNotificationClick function
+    const handleNotificationClick = async (notification) => {
+        try {
+            console.log('Notification clicked:', notification);
+
+            if (notification.type === 'photographer_interest') {
+                // Set the notification directly without fetching booking
+                // since we already have all required data in the notification
+                const enrichedNotification = {
+                    ...notification,
+                    quotation: notification.quotation || {
+                        packageType: 'Standard Package',
+                        price: notification.price || 0,
+                        description: 'Package details to be discussed',
+                        deliverables: {
+                            photos: 100,
+                            videos: 1,
+                            reels: 2,
+                            editedPhotos: 50,
+                            printedPhotos: 20,
+                            photoAlbum: true
+                        },
+                        timeframe: '1-2 weeks',
+                        additionalServices: 'Basic photo editing included',
+                        terms: 'Standard terms and conditions apply'
+                    },
+                    photographerDetails: notification.photographerDetails || {
+                        name: notification.photographerName,
+                        profileImage: require('../image/photo1.jpg'), // Default image
+                        rating: 4.5,
+                        location: 'Location not specified'
+                    }
+                };
+
+                console.log('Setting selected notification with:', enrichedNotification);
+                setSelectedNotification(enrichedNotification);
+            }
+
+            // Mark notification as read if it's unread
+            if (!notification.isRead) {
+                await markAsRead(notification._id);
+            }
+        } catch (error) {
+            console.error('Error handling notification click:', error);
+            setAlertMessage({
+                type: 'error',
+                title: 'Error',
+                message: 'Failed to process notification. Please try again.'
+            });
+        }
+    };
+
+    // Update the markAsRead function
     const markAsRead = async (notificationId) => {
         try {
             // Find the notification that was clicked
             const notification = notifications.find(notif => notif._id === notificationId);
             
-            // Show alert for the clicked notification
-            if (notification) {
-                if (notification.type === 'booking_accepted') {
-                    setAlertMessage({
-                        type: 'success',
-                        title: 'Booking Accepted!',
-                        message: notification.message
-                    });
-                } else if (notification.type === 'booking_rejected') {
-                    setAlertMessage({
-                        type: 'danger',
-                        title: 'Booking Declined',
-                        message: notification.message
-                    });
-                } else {
-                    setAlertMessage({
-                        type: 'info',
-                        title: 'Notification',
-                        message: notification.message
-                    });
-                }
-                
-                // Auto-hide alert after 5 seconds
-                setTimeout(() => {
-                    setAlertMessage(null);
-                }, 5000);
+            if (!notification) {
+                console.warn('Notification not found:', notificationId);
+                return;
             }
 
             await axios.put(`http://localhost:8080/api/notifications/${notificationId}`, 
@@ -724,8 +656,23 @@ const UserDashboard = () => {
             
             setNotifications(updatedNotifications);
             setUnreadCount(prevCount => Math.max(0, prevCount - 1));
+
+            // Only show alert for certain notification types
+            if (notification.type === 'booking_accepted' || notification.type === 'booking_rejected') {
+                setAlertMessage({
+                    type: notification.type === 'booking_accepted' ? 'success' : 'danger',
+                    title: notification.type === 'booking_accepted' ? 'Booking Accepted' : 'Booking Declined',
+                    message: notification.message
+                });
+                
+                // Auto-hide alert after 5 seconds
+                setTimeout(() => {
+                    setAlertMessage(null);
+                }, 5000);
+            }
         } catch (error) {
             console.error('Failed to mark notification as read:', error);
+            // Don't show error alert for this as it's not critical
         }
     };
 
@@ -756,22 +703,178 @@ const UserDashboard = () => {
         await fetchNotifications();
     };
 
+    // Update handleAcceptPhotographer function to handle booking data better
+    const handleAcceptPhotographer = async (notificationId, photographerId, photographerName) => {
+        try {
+            console.log('Accept photographer called with:', {
+                notificationId,
+                photographerId,
+                photographerName
+            });
+
+            // Find the notification
+            const notification = notifications.find(n => n._id === notificationId);
+            console.log('Found notification:', notification);
+
+            if (!notification) {
+                console.error('Notification not found with ID:', notificationId);
+                setAlertMessage({
+                    type: 'danger',
+                    title: 'Error',
+                    message: 'Could not find the notification. Please refresh and try again.'
+                });
+                return;
+            }
+
+            // Get the booking ID from the notification
+            const bookingId = notification.bookingId;
+            console.log('Booking ID from notification:', bookingId);
+
+            if (!bookingId) {
+                console.error('Notification has no bookingId:', notification);
+                setAlertMessage({
+                    type: 'danger',
+                    title: 'Error',
+                    message: 'Could not find the associated booking ID. Please refresh and try again.'
+                });
+                return;
+            }
+
+            // Update booking status in backend
+            console.log('Sending accept request to backend for booking:', bookingId);
+            const acceptResponse = await axios.post(`http://localhost:8080/api/bookings/${bookingId}/accept-photographer`, {
+                photographerId,
+                photographerName,
+                status: 'Confirmed'
+            }, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            console.log('Accept response:', acceptResponse);
+
+            // Send acceptance notification to photographer
+            const notificationResponse = await axios.post('http://localhost:8080/api/notifications', {
+                userId: photographerId,
+                message: `Congratulations! The user has accepted your interest for the booking. You can now proceed with the session details.`,
+                type: 'interest_accepted',
+                bookingId: bookingId,
+                userName: user?.name || localStorage.getItem('userName')
+            }, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            console.log('Notification sent to photographer:', notificationResponse);
+
+            // Mark the current notification as read
+            await axios.put(`http://localhost:8080/api/notifications/${notificationId}`, 
+                { isRead: true },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                }
+            );
+
+            // Show success message
+            setAlertMessage({
+                type: 'success',
+                title: 'Photographer Accepted',
+                message: `You have accepted ${photographerName}'s interest. They have been notified and will contact you soon.`
+            });
+
+            // Close the quotation modal
+            setSelectedNotification(null);
+
+            // Refresh data
+            await Promise.all([
+                fetchData(),
+                fetchNotifications()
+            ]);
+        } catch (error) {
+            console.error('Failed to accept photographer:', error);
+            setAlertMessage({
+                type: 'danger',
+                title: 'Error',
+                message: error.response?.data?.message || 'Failed to accept photographer. Please try again.'
+            });
+        }
+    };
+
+    const handleDeclinePhotographer = async (notificationId, photographerId, photographerName) => {
+        try {
+            const notification = notifications.find(n => n._id === notificationId);
+            if (!notification || !notification.bookingId) {
+                console.error('Invalid notification or booking ID');
+                return;
+            }
+
+            // Send decline notification to photographer
+            await axios.post('http://localhost:8080/api/notifications', {
+                userId: photographerId,
+                message: `Your interest for the booking has been declined.`,
+                type: 'interest_declined',
+                bookingId: notification.bookingId
+            }, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            // Mark the notification as read
+            await axios.put(`http://localhost:8080/api/notifications/${notificationId}`, 
+                { isRead: true },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                }
+            );
+
+            setAlertMessage({
+                type: 'info',
+                title: 'Photographer Declined',
+                message: `You have declined ${photographerName}'s interest.`
+            });
+
+            // Refresh notifications
+            await fetchNotifications();
+        } catch (error) {
+            console.error('Failed to decline photographer:', error);
+            setAlertMessage({
+                type: 'danger',
+                title: 'Error',
+                message: 'Failed to decline photographer. Please try again.'
+            });
+        }
+    };
+
+    // Add toggleNotifications function if it's missing
+    const toggleNotifications = () => {
+        // If we're opening the dropdown, make sure we have notifications to show
+        if (!showNotifications) {
+            fetchNotifications();
+        }
+        setShowNotifications(!showNotifications);
+    };
+
     return (
         <div className="dashboard-container" style={{ 
-            minHeight: '100vh',
-            width: '100vw',
+            height: '100vh',
+            width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 100,
-            backgroundColor: 'var(--primary-color)'
+            backgroundColor: 'var(--primary-color)',
+            overflow: 'hidden'
         }}>
             {/* Top Navigation Bar */}
             <div style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 1000,
                 backgroundColor: 'var(--primary-color)',
                 color: 'var(--accent-color-2)',
                 padding: '15px 20px',
@@ -857,13 +960,14 @@ const UserDashboard = () => {
             </div>
             
             {/* Main content area */}
-            <div style={{ display: 'flex', height: 'calc(100vh - 70px)' }}>
+            <div style={{ display: 'flex', height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
                 {/* Sidebar */}
                 <div style={{
                     width: '250px',
                     backgroundColor: '#5C90A3',
                     padding: '20px 0',
-                    color: '#FFFFFF'
+                    color: '#FFFFFF',
+                    overflowY: 'auto'
                 }}>
                     <div style={{ 
                         margin: '0 20px 20px 20px', 
@@ -950,19 +1054,19 @@ const UserDashboard = () => {
 
             {/* Notification Dropdown */}
             {showNotifications && (
-                <div className="container position-relative">
-                    <div className="notification-dropdown bg-white shadow-lg p-3" 
+                <div className="notification-dropdown bg-white shadow-lg" 
                         style={{ 
-                            position: 'absolute', 
-                            right: '15px',
-                            top: '0',
+                        position: 'fixed',
+                        right: '20px',
+                        top: '70px', // Position below navbar
                             width: '350px',
-                            maxHeight: '400px',
+                        maxHeight: 'calc(100vh - 90px)', // Leave space for margins
                             overflowY: 'auto',
-                            zIndex: 1000,
-                            borderRadius: '8px'
+                        zIndex: 1050,
+                        borderRadius: '8px',
+                        border: '1px solid rgba(0,0,0,0.1)'
                         }}>
-                        <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                    <div className="d-flex justify-content-between align-items-center p-3 border-bottom">
                             <h6 className="mb-0 font-weight-bold">Notifications</h6>
                             {unreadCount > 0 && (
                                 <button 
@@ -974,17 +1078,23 @@ const UserDashboard = () => {
                             )}
                         </div>
                         
+                    <div className="p-3">
                         {notifications && notifications.length > 0 ? (
                             notifications.map((notification, index) => (
                                 <div 
-                                    key={index} 
+                                    key={notification._id || index} 
                                     className={`notification-item p-2 mb-2 rounded ${!notification.isRead ? 'bg-light' : ''}`}
-                                    onClick={() => markAsRead(notification._id)}
-                                    style={{ cursor: 'pointer' }}
+                                    style={{ 
+                                        cursor: 'pointer',
+                                        borderBottom: index !== notifications.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none'
+                                    }}
+                                    onClick={() => handleNotificationClick(notification)}
                                 >
                                     <div className="d-flex">
                                         <div className="me-3">
-                                            {notification.type === 'booking_accepted' ? (
+                                            {notification.type === 'photographer_interest' ? (
+                                                <i className="fas fa-user-check text-primary fa-lg"></i>
+                                            ) : notification.type === 'booking_accepted' ? (
                                                 <i className="fas fa-check-circle text-success fa-lg"></i>
                                             ) : notification.type === 'booking_rejected' ? (
                                                 <i className="fas fa-times-circle text-danger fa-lg"></i>
@@ -992,22 +1102,99 @@ const UserDashboard = () => {
                                                 <i className="fas fa-info-circle text-primary fa-lg"></i>
                                             )}
                                         </div>
-        <div>
-                                            <p className="mb-1">{notification.message}</p>
-                                            <small className="text-muted d-block">{new Date(notification.createdAt).toLocaleString()}</small>
+                                        <div className="flex-grow-1">
+                                            <p className="mb-1" style={{ fontSize: '0.9rem' }}>{notification.message}</p>
+                                            <small className="text-muted d-block">
+                                                {new Date(notification.createdAt).toLocaleString()}
+                                            </small>
                                         </div>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <p className="text-center text-muted my-3">No notifications yet</p>
+                            <div className="text-center text-muted py-4">
+                                <i className="fas fa-bell-slash fa-2x mb-3"></i>
+                                <p>No notifications yet</p>
+                            </div>
                         )}
                     </div>
                 </div>
             )}
 
+            {/* Add Quotation Details Modal */}
+            {selectedNotification && (
+                <div className="modal fade show" style={{ 
+                    display: 'block',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 1050,
+                    overflow: 'hidden',
+                    outline: 0
+                }}>
+                    <div className="modal-dialog modal-lg" style={{
+                        transform: 'none',
+                        margin: '1.75rem auto',
+                        maxHeight: 'calc(100vh - 3.5rem)'
+                    }}>
+                        <div className="modal-content" style={{
+                            maxHeight: 'calc(100vh - 3.5rem)',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}>
+                            <div className="modal-header">
+                                <h5 className="modal-title">Photographer Quotation</h5>
+                                <button 
+                                    type="button" 
+                                    className="btn-close" 
+                                    onClick={() => setSelectedNotification(null)}
+                                ></button>
+                            </div>
+                            <div className="modal-body" style={{
+                                overflow: 'auto',
+                                padding: 0
+                            }}>
+                                <QuotationDetails
+                                    quotation={selectedNotification.quotation || {}}
+                                    photographer={{
+                                        name: selectedNotification.photographerDetails?.name || selectedNotification.photographerName,
+                                        profileImage: selectedNotification.photographerDetails?.profileImage || selectedNotification.photographerImage,
+                                        rating: selectedNotification.photographerDetails?.rating || selectedNotification.photographerRating || 4.5,
+                                        location: selectedNotification.photographerDetails?.location || selectedNotification.photographerLocation || 'Location not specified'
+                                    }}
+                                    onAccept={() => {
+                                        handleAcceptPhotographer(
+                                            selectedNotification._id,
+                                            selectedNotification.photographerId,
+                                            selectedNotification.photographerDetails?.name || selectedNotification.photographerName
+                                        );
+                                        setSelectedNotification(null);
+                                    }}
+                                    onDecline={() => {
+                                        handleDeclinePhotographer(
+                                            selectedNotification._id,
+                                            selectedNotification.photographerId,
+                                            selectedNotification.photographerDetails?.name || selectedNotification.photographerName
+                                        );
+                                        setSelectedNotification(null);
+                                    }}
+                                />
+                    </div>
+                </div>
+                    </div>
+                </div>
+            )}
+
                 {/* Remove the Navigation Tabs section */}
-                <div className="container-fluid py-4" style={{ flex: 1, overflowY: 'auto' }}>
+                <div className="container-fluid py-4" style={{ 
+                    flex: 1, 
+                    overflowY: 'auto',
+                    height: '100%'
+                }}>
                 {loading ? (
                     <div className="text-center p-5">
                         <div className="spinner-border" style={{ color: '#6200ea' }} role="status">
@@ -1020,47 +1207,132 @@ const UserDashboard = () => {
                         {activeTab === "bookings" && (
                             <>
                                 <div className="row mx-2 mb-4">
-                                    <div className="col-lg-3 col-md-6 mb-3">
-                                        <div className="card shadow-sm text-white" style={{ 
-                                            backgroundColor: '#5C90A3',
-                                            borderRadius: '10px'
-                                        }}>
-                                            <div className="card-body">
-                                                <h5 className="card-title">Total Bookings</h5>
-                                                <h2>{bookings.length}</h2>
+                                    <div className="col-12 mb-4">
+                                        <h4 className="text-white mb-3">
+                                            <i className="fas fa-chart-line me-2"></i>
+                                            Booking Statistics
+                                        </h4>
+                                            </div>
+                                    <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
+                                        <div className="card h-100 border-0 shadow-sm" style={{
+                                            borderRadius: '15px',
+                                            background: 'linear-gradient(135deg, #5C90A3 0%, #7BA7B9 100%)',
+                                            transition: 'transform 0.3s ease',
+                                            cursor: 'pointer'
+                                        }}
+                                        onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+                                        onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                        >
+                                            <div className="card-body p-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="rounded-circle p-3 me-3" style={{
+                                                            background: 'rgba(255, 255, 255, 0.2)'
+                                                        }}>
+                                                            <i className="fas fa-calendar-check fa-lg text-white"></i>
+                                        </div>
+                                                        <h6 className="text-white mb-0">Total Bookings</h6>
+                                    </div>
+                                            </div>
+                                                <div className="text-center">
+                                                    <h2 className="text-white mb-0" style={{ fontSize: '2.5rem' }}>
+                                                        {bookings.length}
+                                                    </h2>
+                                                    <p className="text-white-50 mb-0">All Time</p>
+                                        </div>
+                                    </div>
+                                            </div>
+                                        </div>
+
+                                    <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
+                                        <div className="card h-100 border-0 shadow-sm" style={{
+                                            borderRadius: '15px',
+                                            background: 'linear-gradient(135deg, #28a745 0%, #5cc990 100%)',
+                                            transition: 'transform 0.3s ease',
+                                            cursor: 'pointer'
+                                        }}
+                                        onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+                                        onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                        >
+                                            <div className="card-body p-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="rounded-circle p-3 me-3" style={{
+                                                            background: 'rgba(255, 255, 255, 0.2)'
+                                                        }}>
+                                                            <i className="fas fa-check-circle fa-lg text-white"></i>
+                                    </div>
+                                                        <h6 className="text-white mb-0">Confirmed</h6>
+                                                    </div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <h2 className="text-white mb-0" style={{ fontSize: '2.5rem' }}>
+                                                        {bookings.filter(b => b.status?.toLowerCase() === 'confirmed').length}
+                                                    </h2>
+                                                    <p className="text-white-50 mb-0">Active Bookings</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="col-lg-3 col-md-6 mb-3">
-                                        <div className="card shadow-sm text-white" style={{ 
-                                            backgroundColor: '#5C90A3',
-                                            borderRadius: '10px'
-                                        }}>
-                                            <div className="card-body">
-                                                <h5 className="card-title">Confirmed</h5>
-                                                <h2>{bookings.filter(b => b.status?.toLowerCase() === 'confirmed').length}</h2>
+
+                                    <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
+                                        <div className="card h-100 border-0 shadow-sm" style={{
+                                            borderRadius: '15px',
+                                            background: 'linear-gradient(135deg, #ffc107 0%, #ffd75e 100%)',
+                                            transition: 'transform 0.3s ease',
+                                            cursor: 'pointer'
+                                        }}
+                                        onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+                                        onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                        >
+                                            <div className="card-body p-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="rounded-circle p-3 me-3" style={{
+                                                            background: 'rgba(255, 255, 255, 0.2)'
+                                                        }}>
+                                                            <i className="fas fa-clock fa-lg text-white"></i>
+                                                        </div>
+                                                        <h6 className="text-white mb-0">Pending</h6>
+                                                    </div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <h2 className="text-white mb-0" style={{ fontSize: '2.5rem' }}>
+                                                        {bookings.filter(b => b.status?.toLowerCase() === 'pending').length}
+                                                    </h2>
+                                                    <p className="text-white-50 mb-0">Awaiting Response</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="col-lg-3 col-md-6 mb-3">
-                                        <div className="card shadow-sm text-white" style={{ 
-                                            backgroundColor: '#5C90A3',
-                                            borderRadius: '10px'
-                                        }}>
-                                            <div className="card-body">
-                                                <h5 className="card-title">Pending</h5>
-                                                <h2>{bookings.filter(b => b.status?.toLowerCase() === 'pending').length}</h2>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-lg-3 col-md-6 mb-3">
-                                        <div className="card shadow-sm text-white" style={{ 
-                                            backgroundColor: '#5C90A3',
-                                            borderRadius: '10px'
-                                        }}>
-                                            <div className="card-body">
-                                                <h5 className="card-title">Completed</h5>
-                                                <h2>{bookings.filter(b => b.status?.toLowerCase() === 'completed').length}</h2>
+
+                                    <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
+                                        <div className="card h-100 border-0 shadow-sm" style={{
+                                            borderRadius: '15px',
+                                            background: 'linear-gradient(135deg, #17a2b8 0%, #45cadd 100%)',
+                                            transition: 'transform 0.3s ease',
+                                            cursor: 'pointer'
+                                        }}
+                                        onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+                                        onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                        >
+                                            <div className="card-body p-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="rounded-circle p-3 me-3" style={{
+                                                            background: 'rgba(255, 255, 255, 0.2)'
+                                                        }}>
+                                                            <i className="fas fa-flag-checkered fa-lg text-white"></i>
+                                                        </div>
+                                                        <h6 className="text-white mb-0">Completed</h6>
+                                                    </div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <h2 className="text-white mb-0" style={{ fontSize: '2.5rem' }}>
+                                                        {bookings.filter(b => b.status?.toLowerCase() === 'completed').length}
+                                                    </h2>
+                                                    <p className="text-white-50 mb-0">Successfully Done</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1092,7 +1364,13 @@ const UserDashboard = () => {
                                                             <span className="badge bg-light text-dark px-2 py-1">{booking.status}</span>
                                                         </div>
                                                         <div className="small">
-                                                            <i className="fas fa-camera me-1"></i> {booking.photographer || 'Not assigned'}
+                                                            <i className="fas fa-camera me-1"></i> 
+                                                            {booking.photographer || 'Not assigned'}
+                                                            {booking.status === 'Pending' && booking.interestedPhotographers?.length > 0 && (
+                                                                <span className="ms-2 badge bg-primary">
+                                                                    {booking.interestedPhotographers.length} interested
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <div className="card-body">
@@ -1120,6 +1398,68 @@ const UserDashboard = () => {
                                                                 <div className="info-label" style={{ width: '140px', fontWeight: 'bold' }}>Price:</div>
                                                                 <div className="font-weight-bold">{booking.price}</div>
                                                             </div>
+                                                            
+                                                            {/* Show interested photographers section for pending bookings */}
+                                                            {booking.status === 'Pending' && booking.interestedPhotographers?.length > 0 && (
+                                                                <div className="mt-3">
+                                                                    <h6 className="mb-2">Interested Photographers:</h6>
+                                                                    <div className="interested-photographers">
+                                                                        {booking.interestedPhotographers.map((photographer, idx) => (
+                                                                            <div key={idx} className="interested-photographer mb-2 p-2 border rounded">
+                                                                                <div className="d-flex justify-content-between align-items-center">
+                                                                                    <span>{photographer.name}</span>
+                                                                                    <div>
+                                                                                        <button 
+                                                                                            className="btn btn-sm btn-success me-2"
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                if (!photographer.id || !photographer.name) {
+                                                                                                    console.error('Missing photographer details:', photographer);
+                                                                                                    setAlertMessage({
+                                                                                                        type: 'danger',
+                                                                                                        title: 'Error',
+                                                                                                        message: 'Missing photographer details. Please refresh and try again.'
+                                                                                                    });
+                                                                                                    return;
+                                                                                                }
+                                                                                                handleAcceptPhotographer(
+                                                                                                    photographer.notificationId,
+                                                                                                    photographer.id,
+                                                                                                    photographer.name
+                                                                                                );
+                                                                                            }}
+                                                                                        >
+                                                                                            Accept
+                                                                                        </button>
+                                                                                        <button 
+                                                                                            className="btn btn-sm btn-outline-danger"
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                if (!photographer.id || !photographer.name) {
+                                                                                                    console.error('Missing photographer details:', photographer);
+                                                                                                    setAlertMessage({
+                                                                                                        type: 'danger',
+                                                                                                        title: 'Error',
+                                                                                                        message: 'Missing photographer details. Please refresh and try again.'
+                                                                                                    });
+                                                                                                    return;
+                                                                                                }
+                                                                                                handleDeclinePhotographer(
+                                                                                                    photographer.notificationId,
+                                                                                                    photographer.id,
+                                                                                                    photographer.name
+                                                                                                );
+                                                                                            }}
+                                                                                        >
+                                                                                            Decline
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <div className="card-footer bg-white d-flex justify-content-between" style={{ borderBottomLeftRadius: '10px', borderBottomRightRadius: '10px' }}>

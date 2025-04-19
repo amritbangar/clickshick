@@ -262,8 +262,8 @@ const Signup = () => {
                                 }}>
                                     <i className="fas fa-user" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
-                                <input
-                                    type="text"
+                    <input
+                        type="text"
                                     style={{ 
                                         padding: '12px 15px',
                                         border: `1px solid var(--border-color)`,
@@ -274,11 +274,11 @@ const Signup = () => {
                                         fontSize: '16px'
                                     }}
                                     placeholder="Enter your full name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                            </div>
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                    />
+                </div>
                         </div>
 
                         <div className="form-group mb-4">
@@ -299,8 +299,8 @@ const Signup = () => {
                                 }}>
                                     <i className="fas fa-envelope" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
-                                <input
-                                    type="email"
+                    <input
+                        type="email"
                                     style={{ 
                                         padding: '12px 15px',
                                         border: `1px solid var(--border-color)`,
@@ -311,11 +311,11 @@ const Signup = () => {
                                         fontSize: '16px'
                                     }}
                                     placeholder="Enter your email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                </div>
                         </div>
 
                         <div className="form-group mb-4">
@@ -336,8 +336,8 @@ const Signup = () => {
                                 }}>
                                     <i className="fas fa-lock" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
-                                <input
-                                    type="password"
+                    <input
+                        type="password"
                                     style={{ 
                                         padding: '12px 15px',
                                         border: `1px solid var(--border-color)`,
@@ -348,11 +348,11 @@ const Signup = () => {
                                         fontSize: '16px'
                                     }}
                                     placeholder="Create a password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                </div>
                             <small style={{ color: 'var(--text-light)', fontSize: '12px', marginTop: '5px', display: 'block' }}>
                                 Password must be at least 4 characters long
                             </small>
@@ -400,12 +400,12 @@ const Signup = () => {
                                 Account Type
                             </label>
                             <div style={{ 
-                                display: 'flex',
+                                display: 'flex', 
                                 gap: '20px'
                             }}>
                                 <label style={{ 
-                                    display: 'flex',
-                                    alignItems: 'center',
+                                    display: 'flex', 
+                                    alignItems: 'center', 
                                     cursor: 'pointer',
                                     flexGrow: 1,
                                     padding: '15px',
@@ -413,8 +413,8 @@ const Signup = () => {
                                     borderRadius: '5px',
                                     backgroundColor: category === 'user' ? 'rgba(255, 165, 0, 0.1)' : 'transparent'
                                 }}>
-                                    <input
-                                        type="radio"
+                                    <input 
+                                        type="radio" 
                                         name="category"
                                         value="user"
                                         checked={category === 'user'}
@@ -427,10 +427,10 @@ const Signup = () => {
                                             I want to hire photographers
                                         </p>
                                     </div>
-                                </label>
+                                    </label>
                                 
                                 <label style={{ 
-                                    display: 'flex',
+                                    display: 'flex', 
                                     alignItems: 'center',
                                     cursor: 'pointer',
                                     flexGrow: 1,
@@ -439,8 +439,8 @@ const Signup = () => {
                                     borderRadius: '5px',
                                     backgroundColor: category === 'photographer' ? 'rgba(255, 165, 0, 0.1)' : 'transparent'
                                 }}>
-                                    <input
-                                        type="radio"
+                                    <input 
+                                        type="radio" 
                                         name="category"
                                         value="photographer"
                                         checked={category === 'photographer'}
@@ -452,7 +452,7 @@ const Signup = () => {
                                         <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: 'var(--text-light)' }}>
                                             I want to offer my services
                                         </p>
-                                    </div>
+                        </div>
                                 </label>
                             </div>
                         </div>
@@ -460,7 +460,7 @@ const Signup = () => {
                         <button 
                             type="submit" 
                             className="btn-primary"
-                            style={{
+                            style={{ 
                                 width: '100%',
                                 padding: '12px',
                                 backgroundColor: 'var(--accent-color-1)',

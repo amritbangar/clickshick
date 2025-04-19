@@ -4,6 +4,7 @@ import axios from 'axios';
 import PinCodePopup from '../components/PinCodePopup';
 import bookingsService from '../services/BookingsService';
 import BookingAnalytics from '../components/BookingAnalytics';
+import ShowInterestPopup from '../components/ShowInterestPopup';
 import '../styles/reset.css';
 
 const PhotographerDashboard = () => {
@@ -27,13 +28,15 @@ const PhotographerDashboard = () => {
   const [lastRefreshTime, setLastRefreshTime] = useState(null);
   const [showAllMongoDBBookings, setShowAllMongoDBBookings] = useState(true);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(300000); // Default: 5 minutes instead of 1 minute
+  const [refreshInterval, setRefreshInterval] = useState(300000);
   const [refreshTimerId, setRefreshTimerId] = useState(null);
   const [showAutoRefreshOptions, setShowAutoRefreshOptions] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showInterestPopup, setShowInterestPopup] = useState(false);
+  const [selectedBookingForInterest, setSelectedBookingForInterest] = useState(null);
   const [lastFilterSettings, setLastFilterSettings] = useState({
-    pinCode: '',
-    viewAll: false
+    pinCode: undefined,
+    viewAll: undefined
   });
   const navigate = useNavigate();
 
@@ -1165,22 +1168,224 @@ const PhotographerDashboard = () => {
     }
   };
 
+  const handleShowInterest = async (bookingId, userId) => {
+    const bookingToUpdate = bookings.find(b => 
+      (b._id && b._id === bookingId) || (b.id && b.id === bookingId)
+    );
+    
+    if (!bookingToUpdate) {
+      setNotification({
+        type: 'error',
+        message: 'Cannot find booking'
+      });
+      return;
+    }
+    
+    setSelectedBookingForInterest(bookingToUpdate);
+    setShowInterestPopup(true);
+  };
+
+  const handleInterestSubmit = async (formData) => {
+    try {
+      setLoading(true);
+      const bookingId = selectedBookingForInterest._id || selectedBookingForInterest.id;
+      const targetUserId = selectedBookingForInterest.userId;
+
+      // 1. Update booking to add photographer to interestedPhotographers array
+      const response = await axios.put(`http://localhost:8080/api/bookings/${bookingId}/interest`, {
+        photographerId: photographer?._id || localStorage.getItem('userId'),
+        photographerName: photographer?.name || 'Test Photographer',
+        photographerDetails: {
+          ...formData,
+          experience: photographer?.experience,
+          specialization: photographer?.specialization,
+          rating: photographer?.rating
+        }
+      });
+      
+      console.log('Added photographer interest:', response.data);
+
+      // 2. Send notification to user
+      const notificationResponse = await axios.post('http://localhost:8080/api/notifications', {
+        userId: targetUserId,
+        photographerId: photographer?._id || localStorage.getItem('userId'),
+        message: `${photographer?.name || 'A photographer'} is interested in your booking request! Check your dashboard to review and accept.`,
+        bookingId,
+        type: 'photographer_interested'
+      });
+      
+      console.log('Notification sent:', notificationResponse.data);
+
+      // 3. Update local booking list to show interest status
+      const updatedBookings = bookings.map(booking => 
+        (booking._id === bookingId || booking.id === bookingId) ? 
+        { 
+          ...booking, 
+          interestedPhotographers: [...(booking.interestedPhotographers || []), {
+            id: photographer?._id || localStorage.getItem('userId'),
+            name: photographer?.name || 'Test Photographer',
+            date: new Date()
+          }]
+        } : booking
+      );
+      setBookings(updatedBookings);
+
+      setNotification({
+        type: 'success',
+        message: `Interest shown successfully! The user will be notified.`
+      });
+
+    } catch (error) {
+      console.error('Error showing interest:', error);
+      setNotification({
+        type: 'error',
+        message: 'Failed to show interest. Please try again.'
+      });
+    } finally {
+      setLoading(false);
+      setShowInterestPopup(false);
+      setSelectedBookingForInterest(null);
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+    }
+  };
+
+  const handleCloseInterestPopup = () => {
+    setShowInterestPopup(false);
+    setSelectedBookingForInterest(null);
+  };
+
+  // Update the booking card render to show new action buttons
+  const renderBookingActions = (booking) => {
+    const photographerId = localStorage.getItem('userId');
+    const hasShownInterest = booking.interestedPhotographers?.some(p => p.id === photographerId);
+    const isAccepted = booking.status?.toLowerCase() === 'confirmed';
+    const isCancelled = booking.status?.toLowerCase() === 'cancelled';
+
+    if (isAccepted || isCancelled) {
+      return (
+            <button 
+          onClick={() => {
+            setSelectedBooking(booking);
+            setShowDetailsModal(true);
+          }}
+              style={{ 
+            backgroundColor: '#5C90A3',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '8px 15px',
+            fontSize: '0.9rem',
+            cursor: 'pointer'
+          }}
+        >
+          <i className="fas fa-info-circle" style={{ marginRight: '5px' }}></i>
+          View Details
+            </button>
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+        {!hasShownInterest && (
+            <button 
+            onClick={() => handleShowInterest(booking._id || booking.id, booking.userId)}
+              style={{ 
+              backgroundColor: '#5C90A3',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '8px 15px',
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            <i className="fas fa-hand-paper" style={{ marginRight: '5px' }}></i>
+            Show Interest
+            </button>
+        )}
+        {hasShownInterest && (
+            <button 
+            disabled
+              style={{ 
+              backgroundColor: '#4CAF50',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '8px 15px',
+              fontSize: '0.9rem',
+              opacity: 0.7
+            }}
+          >
+            <i className="fas fa-check" style={{ marginRight: '5px' }}></i>
+            Interest Shown
+          </button>
+        )}
+        <button
+          onClick={() => {
+            setSelectedBooking(booking);
+            setShowDetailsModal(true);
+          }}
+          style={{
+            backgroundColor: 'transparent',
+            color: '#5C90A3',
+            border: '1px solid #5C90A3',
+            borderRadius: '4px',
+            padding: '8px 15px',
+            fontSize: '0.9rem',
+            cursor: 'pointer'
+          }}
+        >
+          <i className="fas fa-info-circle" style={{ marginRight: '5px' }}></i>
+          Details
+            </button>
+          </div>
+    );
+  };
+
+  // Update the booking card JSX
+  {bookings.map((booking, index) => (
+    <div key={booking._id || booking.id || index} style={{
+      backgroundColor: 'var(--accent-color-2)',
+      borderRadius: '8px',
+      padding: '20px',
+      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
+      borderLeft: `4px solid ${
+        booking.status === 'Confirmed' ? 'var(--success-color)' :
+        booking.status === 'Pending' ? 'var(--warning-color)' :
+        booking.status === 'Cancelled' ? 'var(--danger-color)' : 'var(--info-color)'
+      }`
+    }}>
+      {/* ... existing booking card content ... */}
+      
+      <div style={{ marginTop: '15px' }}>
+        {renderBookingActions(booking)}
+        </div>
+      
+      {booking.interestedPhotographers && booking.interestedPhotographers.length > 0 && (
+        <div style={{ 
+          marginTop: '15px', 
+          padding: '10px', 
+          backgroundColor: 'rgba(92, 144, 163, 0.1)', 
+          borderRadius: '4px',
+          fontSize: '0.85rem'
+        }}>
+          <i className="fas fa-users" style={{ marginRight: '5px', color: '#5C90A3' }}></i>
+          {booking.interestedPhotographers.length} photographer(s) interested
+        </div>
+      )}
+    </div>
+  ))}
+
   return (
     <div className="dashboard-container" style={{ 
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      height: '100vh', 
-      width: '100vw',
-      overflow: 'hidden',
+      height: '100vh',
+      width: '100%',
       display: 'flex',
       flexDirection: 'column',
-      margin: 0,
-      padding: 0,
-      border: 'none',
-      backgroundColor: 'var(--primary-color)'
+      backgroundColor: 'var(--primary-color)',
+      overflow: 'hidden'
     }}>
       {/* Top navigation bar */}
       <div style={{
@@ -1198,8 +1403,8 @@ const PhotographerDashboard = () => {
             <i className="fas fa-camera" style={{ marginRight: '10px' }}></i>
             clickshick.com
           </h2>
-          </div>
-
+              </div>
+              
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {/* Fullscreen toggle button */}
           <div 
@@ -1236,8 +1441,8 @@ const PhotographerDashboard = () => {
               }}>
                   {unreadCount}
                 </span>
-              )}
-          </div>
+                                  )}
+                              </div>
 
           {/* User info with dropdown */}
           <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
@@ -1254,17 +1459,17 @@ const PhotographerDashboard = () => {
               fontWeight: 'bold'
             }}>
               {photographer && photographer.name ? photographer.name.charAt(0).toUpperCase() : 'P'}
-        </div>
+                              </div>
             <span style={{ fontWeight: 'bold' }}>
               {photographer ? photographer.name : 'Photographer'}
             </span>
             <i className="fas fa-chevron-down" style={{ marginLeft: '8px', fontSize: '0.8rem' }}></i>
-        </div>
-        </div>
-      </div>
+                          </div>
+                      </div>
+          </div>
       
       {/* Main content area */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
         {/* Sidebar */}
         <div style={{
           width: '250px',
@@ -1362,15 +1567,7 @@ const PhotographerDashboard = () => {
         </div>
 
         {/* Main content */}
-        <div style={{ 
-          flex: 1, 
-          padding: '20px', 
-          backgroundColor: '#f5f7fa', 
-          overflowY: 'auto',
-          height: 'calc(100vh - 70px)', // Subtract header height
-          maxHeight: 'calc(100vh - 70px)', // Keep consistent
-          position: 'relative'
-        }}>
+        <div className="container-fluid py-4" style={{ flex: 1, overflowY: 'auto', height: '100%' }}>
           {/* Notification Alert */}
           {notification && (
             <div style={{
@@ -1423,8 +1620,8 @@ const PhotographerDashboard = () => {
                   Booking Filters
                 </h3>
                 <button onClick={() => setShowPinCodePopup(true)} style={{
-                  backgroundColor: currentPinCode ? 'var(--primary-color)' : 'var(--accent-color-1)',
-                  color: 'var(--accent-color-2)',
+                  backgroundColor: currentPinCode ? '#5C90A3' : '#5C90A3',
+                  color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '4px',
                   padding: '8px 15px',
@@ -1617,63 +1814,124 @@ const PhotographerDashboard = () => {
 
         {/* Stats Summary */}
         <div className="row mx-2 mb-4">
-          <div className="col-lg-3 col-md-6 mb-3">
-            <div className="card shadow-sm text-white" style={{ 
-              backgroundColor: '#5C90A3',
-              borderRadius: '10px',
-              height: '120px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center'
+          {/* Total Bookings Tile */}
+          <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
+            <div className="card h-100" style={{
+              background: 'linear-gradient(135deg, #0396FF, #0D47A1)',
+              borderRadius: '15px',
+              border: 'none',
+              boxShadow: '0 4px 20px rgba(3, 150, 255, 0.15)'
             }}>
-              <div className="card-body text-center">
-                <h5 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '6px' }}>Total Bookings</h5>
-                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{bookings.length}</h2>
+              <div className="card-body">
+                <div className="d-flex align-items-center justify-content-between mb-3">
+                  <div className="d-flex align-items-center">
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '10px',
+                      marginRight: '15px'
+                    }}>
+                      <i className="fas fa-calendar-check" style={{ fontSize: '24px', color: 'white' }}></i>
+                    </div>
+                    <div>
+                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>Total Bookings</h6>
+                      <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>{bookings.length}</h2>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="col-lg-3 col-md-6 mb-3">
-            <div className="card shadow-sm text-white" style={{ 
-              backgroundColor: '#5C90A3',
-              borderRadius: '10px',
-              height: '120px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center'
+
+          {/* Confirmed Tile */}
+          <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
+            <div className="card h-100" style={{
+              background: 'linear-gradient(135deg, #4CAF50, #2E7D32)',
+              borderRadius: '15px',
+              border: 'none',
+              boxShadow: '0 4px 20px rgba(76, 175, 80, 0.15)'
             }}>
-              <div className="card-body text-center">
-                <h5 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '6px' }}>Confirmed</h5>
-                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{bookings.filter(b => b.decision?.toLowerCase() === 'confirmed').length}</h2>
+              <div className="card-body">
+                <div className="d-flex align-items-center justify-content-between mb-3">
+                  <div className="d-flex align-items-center">
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '10px',
+                      marginRight: '15px'
+                    }}>
+                      <i className="fas fa-check-circle" style={{ fontSize: '24px', color: 'white' }}></i>
+                    </div>
+                    <div>
+                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>Confirmed</h6>
+                      <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
+                        {bookings.filter(b => b.decision?.toLowerCase() === 'confirmed').length}
+                      </h2>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="col-lg-3 col-md-6 mb-3">
-            <div className="card shadow-sm text-white" style={{ 
-              backgroundColor: '#5C90A3',
-              borderRadius: '10px',
-              height: '120px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center'
+
+          {/* Likely Tile */}
+          <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
+            <div className="card h-100" style={{
+              background: 'linear-gradient(135deg, #FFB64D, #F09819)',
+              borderRadius: '15px',
+              border: 'none',
+              boxShadow: '0 4px 20px rgba(255, 182, 77, 0.15)'
             }}>
-              <div className="card-body text-center">
-                <h5 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '6px' }}>Likely</h5>
-                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{bookings.filter(b => b.decision?.toLowerCase() === 'likely').length}</h2>
+              <div className="card-body">
+                <div className="d-flex align-items-center justify-content-between mb-3">
+                  <div className="d-flex align-items-center">
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '10px',
+                      marginRight: '15px'
+                    }}>
+                      <i className="fas fa-star" style={{ fontSize: '24px', color: 'white' }}></i>
+                    </div>
+                    <div>
+                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>Likely</h6>
+                      <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
+                        {bookings.filter(b => b.decision?.toLowerCase() === 'likely').length}
+                      </h2>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="col-lg-3 col-md-6 mb-3">
-            <div className="card shadow-sm text-white" style={{ 
-              backgroundColor: '#5C90A3',
-              borderRadius: '10px',
-              height: '120px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center'
+
+          {/* Pending Tile */}
+          <div className="col-xl-3 col-lg-6 col-md-6 mb-4">
+            <div className="card h-100" style={{
+              background: 'linear-gradient(135deg, #00BCD4, #008394)',
+              borderRadius: '15px',
+              border: 'none',
+              boxShadow: '0 4px 20px rgba(0, 188, 212, 0.15)'
             }}>
-              <div className="card-body text-center">
-                <h5 className="card-title" style={{ fontSize: '0.85rem', marginBottom: '6px' }}>Pending</h5>
-                <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{bookings.filter(b => b.decision?.toLowerCase() === 'pending').length}</h2>
+              <div className="card-body">
+                <div className="d-flex align-items-center justify-content-between mb-3">
+                  <div className="d-flex align-items-center">
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '10px',
+                      marginRight: '15px'
+                    }}>
+                      <i className="fas fa-clock" style={{ fontSize: '24px', color: 'white' }}></i>
+                    </div>
+                    <div>
+                      <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>Pending</h6>
+                      <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
+                        {bookings.filter(b => b.decision?.toLowerCase() === 'pending').length}
+                      </h2>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1862,62 +2120,25 @@ const PhotographerDashboard = () => {
                           </div>
                           
                           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                            {booking.status === 'Pending' && (
-                          <>
-                            <button 
-                              onClick={() => handleAcceptBooking(booking._id || booking.id, booking.userId)}
-                                  style={{
-                                    backgroundColor: 'var(--success-color)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    padding: '8px 15px',
-                                    fontSize: '0.9rem',
-                                    cursor: 'pointer'
-                                  }}
-                                >
-                                  <i className="fas fa-check" style={{ marginRight: '5px' }}></i>
-                                  Accept
-                            </button>
-                            <button 
-                              onClick={() => handleRejectBooking(booking._id || booking.id, booking.userId)}
-                                  style={{
-                                    backgroundColor: 'var(--danger-color)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    padding: '8px 15px',
-                                    fontSize: '0.9rem',
-                                    cursor: 'pointer'
-                                  }}
-                                >
-                                  <i className="fas fa-times" style={{ marginRight: '5px' }}></i>
-                                  Decline
-                            </button>
-                          </>
-                        )}
-                            <button
-                              onClick={() => {
-                                setSelectedBooking(booking);
-                                setShowDetailsModal(true);
-                              }}
-                              style={{
-                                backgroundColor: 'var(--primary-color)',
-                                color: 'var(--accent-color-2)',
-                                border: 'none',
-                                borderRadius: '4px',
-                                padding: '8px 15px',
-                                fontSize: '0.9rem',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <i className="fas fa-info-circle" style={{ marginRight: '5px' }}></i>
-                              Details
-                          </button>
+                            <div style={{ marginTop: '15px' }}>
+                              {renderBookingActions(booking)}
                       </div>
+                            {booking.interestedPhotographers && booking.interestedPhotographers.length > 0 && (
+                              <div style={{ 
+                                marginTop: '15px', 
+                                padding: '10px', 
+                                backgroundColor: 'rgba(92, 144, 163, 0.1)', 
+                                borderRadius: '4px',
+                                fontSize: '0.85rem'
+                              }}>
+                                <i className="fas fa-users" style={{ marginRight: '5px', color: '#5C90A3' }}></i>
+                                {booking.interestedPhotographers.length} photographer(s) interested
                     </div>
-                      ))}
+                            )}
                   </div>
+                </div>
+                      ))}
+                </div>
                 {/* Add padding at bottom to ensure content isn't hidden by footer */}
                 <div style={{ height: '50px' }}></div>
               </div>
@@ -1975,6 +2196,15 @@ const PhotographerDashboard = () => {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Show Interest Popup */}
+      {showInterestPopup && selectedBookingForInterest && (
+        <ShowInterestPopup
+          booking={selectedBookingForInterest}
+          onClose={handleCloseInterestPopup}
+          onSubmit={handleInterestSubmit}
+        />
       )}
     </div>
   );
