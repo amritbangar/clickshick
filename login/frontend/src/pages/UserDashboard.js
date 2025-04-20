@@ -499,13 +499,13 @@ const UserDashboard = () => {
         fetchNotifications();
         fetchData();
         
-        // Setup polling for new notifications
-        const notificationInterval = setInterval(() => {
-            fetchNotifications();
-            fetchData(); // Also refresh booking data to keep interested photographers count updated
-        }, 30000);
-
-        return () => clearInterval(notificationInterval);
+        // Remove the polling interval and cleanup
+        // const notificationInterval = setInterval(() => {
+        //     fetchNotifications();
+        //     fetchData(); // Also refresh booking data to keep interested photographers count updated
+        // }, 30000);
+        
+        // return () => clearInterval(notificationInterval);
     }, []);
 
     // Update the fetchNotifications function to include quotation data
