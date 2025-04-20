@@ -38,6 +38,7 @@ const PhotographerDashboard = () => {
     pinCode: undefined,
     viewAll: undefined
   });
+  const [alertMessage, setAlertMessage] = useState(null);
   const navigate = useNavigate();
 
   // Add debug log function
@@ -509,31 +510,80 @@ const PhotographerDashboard = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           },
-          timeout: 3000 // Set a 3 second timeout to fail fast when server is down
+          timeout: 3000
         });
         
         if (Array.isArray(response.data)) {
+          // Process notifications and format them
+          const formattedNotifications = response.data.map(notification => {
+            let formattedMessage = notification.message;
+            let notificationType = notification.type;
+            let icon = 'bell';
+
+            // Handle different notification types
+            switch (notification.type) {
+              case 'booking_accepted':
+                icon = 'check-circle';
+                formattedMessage = `${notification.userName || 'A user'} has accepted your quotation for ${notification.bookingType || 'photography session'}`;
+                break;
+              case 'booking_rejected':
+                icon = 'times-circle';
+                formattedMessage = `${notification.userName || 'A user'} has declined your quotation for ${notification.bookingType || 'photography session'}`;
+                break;
+              case 'new_booking':
+                icon = 'calendar-plus';
+                break;
+              case 'booking_cancelled':
+                icon = 'calendar-times';
+                break;
+              case 'new_review':
+                icon = 'star';
+                break;
+              default:
+                icon = 'bell';
+            }
+
+            return {
+              ...notification,
+              message: formattedMessage,
+              type: notificationType,
+              icon: icon
+            };
+          });
+
           // Check if we have new notifications
           const currentNotifCount = unreadCount;
-          const newNotifications = response.data;
-          const newUnreadCount = newNotifications.filter(notif => !notif.isRead).length;
+          const newUnreadCount = formattedNotifications.filter(notif => !notif.isRead).length;
           
           // Update notifications state
-          setNotifications(newNotifications);
+          setNotifications(formattedNotifications);
           setUnreadCount(newUnreadCount);
           
           // If there are new notifications, refresh bookings
           if (newUnreadCount > currentNotifCount) {
-            // Refresh bookings to get latest status
             fetchData();
+          }
+
+          // Show notification alert for new unread notifications
+          const newUnreadNotification = formattedNotifications.find(n => !n.isRead);
+          if (newUnreadNotification && notification === null) {
+            setNotification({
+              type: newUnreadNotification.type === 'booking_accepted' ? 'success' : 
+                    newUnreadNotification.type === 'booking_rejected' ? 'warning' : 
+                    newUnreadNotification.type === 'new_booking' ? 'info' : 'info',
+              message: newUnreadNotification.message
+            });
+            
+            // Auto-hide notification after 5 seconds
+            setTimeout(() => {
+              setNotification(null);
+            }, 5000);
           }
         }
       } catch (error) {
-        // Only log detailed errors during development
         if (process.env.NODE_ENV === 'development') {
           console.error('Failed to fetch notifications from API:', error);
         }
-        // We already have mock notifications loaded from useEffect
       }
     } catch (error) {
       console.error('Failed to process notifications:', error);
@@ -1187,67 +1237,140 @@ const PhotographerDashboard = () => {
 
   const handleInterestSubmit = async (formData) => {
     try {
-      setLoading(true);
-      const bookingId = selectedBookingForInterest._id || selectedBookingForInterest.id;
-      const targetUserId = selectedBookingForInterest.userId;
+      console.log('Submitting interest with form data:', formData);
+      addDebugLog('Submitting photographer interest');
+      
+      if (!selectedBookingForInterest || !selectedBookingForInterest._id) {
+        console.error('Selected booking:', selectedBookingForInterest);
+        throw new Error('No booking selected or invalid booking ID');
+      }
 
-      // 1. Update booking to add photographer to interestedPhotographers array
-      const response = await axios.put(`http://localhost:8080/api/bookings/${bookingId}/interest`, {
-        photographerId: photographer?._id || localStorage.getItem('userId'),
-        photographerName: photographer?.name || 'Test Photographer',
-        photographerDetails: {
-          ...formData,
-          experience: photographer?.experience,
-          specialization: photographer?.specialization,
-          rating: photographer?.rating
+      const photographerId = localStorage.getItem('userId');
+      if (!photographerId) {
+        throw new Error('Photographer ID not found. Please log in again.');
+      }
+
+      // Fetch current photographer's details
+      const photographerResponse = await axios.get(
+        `http://localhost:8080/api/auth/photographers/${photographerId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         }
-      });
-      
-      console.log('Added photographer interest:', response.data);
-
-      // 2. Send notification to user
-      const notificationResponse = await axios.post('http://localhost:8080/api/notifications', {
-        userId: targetUserId,
-        photographerId: photographer?._id || localStorage.getItem('userId'),
-        message: `${photographer?.name || 'A photographer'} is interested in your booking request! Check your dashboard to review and accept.`,
-        bookingId,
-        type: 'photographer_interested'
-      });
-      
-      console.log('Notification sent:', notificationResponse.data);
-
-      // 3. Update local booking list to show interest status
-      const updatedBookings = bookings.map(booking => 
-        (booking._id === bookingId || booking.id === bookingId) ? 
-        { 
-          ...booking, 
-          interestedPhotographers: [...(booking.interestedPhotographers || []), {
-            id: photographer?._id || localStorage.getItem('userId'),
-            name: photographer?.name || 'Test Photographer',
-            date: new Date()
-          }]
-        } : booking
       );
-      setBookings(updatedBookings);
 
-      setNotification({
+      const photographerDetails = photographerResponse.data;
+      console.log('Photographer details:', photographerDetails);
+
+      if (!photographerDetails) {
+        throw new Error('Could not fetch photographer details');
+      }
+
+      addDebugLog(`Submitting for booking ID: ${selectedBookingForInterest._id}`);
+      console.log('Booking details:', selectedBookingForInterest);
+
+      // Prepare the quotation data
+      const quotationData = {
+        photographerId: photographerDetails._id,
+        photographerName: photographerDetails.name,
+        photographerDetails: {
+          specialization: photographerDetails.specialization || 'Photography',
+          experience: photographerDetails.experience || '2+ years',
+          rating: photographerDetails.rating || 4.5,
+          location: photographerDetails.location || 'Not specified',
+          portfolio: photographerDetails.portfolio || '#',
+          profileImage: photographerDetails.profileImage || '../image/default-avatar.jpg'
+        },
+        quotation: {
+          packageType: selectedBookingForInterest.photographyType,
+          price: formData.expectedPrice,
+          description: formData.message,
+          deliverables: {
+            photos: parseInt(formData.numPhotos) || 100,
+            videos: parseInt(formData.numVideos) || 1,
+            reels: parseInt(formData.numReels) || 2,
+            editedPhotos: parseInt(formData.numEditedPhotos) || 50,
+            printedPhotos: parseInt(formData.numPrintedPhotos) || 20,
+            photoAlbum: formData.includePhotoAlbum || false
+          },
+          timeframe: formData.timeframe || '2-3 weeks',
+          additionalServices: formData.additionalNotes,
+          terms: formData.terms || 'Standard terms and conditions apply',
+          availability: formData.availability,
+          submittedAt: new Date().toISOString()
+        }
+      };
+
+      // First, show interest in the booking
+      const interestResponse = await axios.put(
+        `http://localhost:8080/api/bookings/${selectedBookingForInterest._id}`,
+        {
+          action: 'show_interest',
+          ...quotationData
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      console.log('Interest response:', interestResponse);
+      addDebugLog('Interest submitted successfully');
+
+      // Create notification for the user with the same data
+      const notificationResponse = await axios.post(
+        'http://localhost:8080/api/notifications',
+        {
+          userId: selectedBookingForInterest.userId,
+          ...quotationData,
+          message: `${photographerDetails.name} has submitted a quotation of ${formData.expectedPrice} for your ${selectedBookingForInterest.photographyType} booking.`,
+          type: 'photographer_interest',
+          bookingId: selectedBookingForInterest._id,
+          bookingType: selectedBookingForInterest.photographyType,
+          bookingDetails: {
+            type: selectedBookingForInterest.photographyType,
+            date: selectedBookingForInterest.date,
+            location: selectedBookingForInterest.location,
+            budgetRange: selectedBookingForInterest.budgetRange
+          }
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      console.log('Notification response:', notificationResponse);
+      addDebugLog('Notification sent successfully');
+
+      // Show success message
+      setAlertMessage({
         type: 'success',
-        message: `Interest shown successfully! The user will be notified.`
+        title: 'Quotation Submitted',
+        message: 'Your quotation and interest have been submitted successfully! The client will be notified.'
       });
 
-    } catch (error) {
-      console.error('Error showing interest:', error);
-      setNotification({
-        type: 'error',
-        message: 'Failed to show interest. Please try again.'
-      });
-    } finally {
-      setLoading(false);
+      // Close the popup and refresh data
       setShowInterestPopup(false);
       setSelectedBookingForInterest(null);
-      setTimeout(() => {
-        setNotification(null);
-      }, 5000);
+      fetchData();
+
+    } catch (error) {
+      console.error('Error submitting interest:', error);
+      console.error('Error details:', error.response?.data);
+      addDebugLog(`Error submitting interest: ${error.message}`, 'error');
+      
+      // Show detailed error message
+      setAlertMessage({
+        type: 'danger',
+        title: 'Error',
+        message: error.response?.data?.message || error.message || 'Failed to submit quotation. Please try again.'
+      });
     }
   };
 
@@ -1441,8 +1564,123 @@ const PhotographerDashboard = () => {
               }}>
                   {unreadCount}
                 </span>
-                                  )}
-                              </div>
+              )}
+            </div>
+
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <div style={{
+                position: 'absolute',
+                top: '60px',
+                right: '20px',
+                width: '400px',
+                maxHeight: '500px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                zIndex: 1000,
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  padding: '15px',
+                  borderBottom: '1px solid #E0E0E0',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary-color)' }}>Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--primary-color)',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        padding: '5px 10px',
+                        borderRadius: '4px',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(92, 144, 163, 0.1)'}
+                      onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+                
+                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification._id}
+                        style={{
+                          padding: '15px',
+                          borderBottom: '1px solid #E0E0E0',
+                          backgroundColor: notification.isRead ? 'transparent' : 'rgba(92, 144, 163, 0.05)',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onClick={() => markAsRead(notification._id)}
+                        onMouseOver={(e) => e.target.style.backgroundColor = notification.isRead ? 'rgba(92, 144, 163, 0.05)' : 'rgba(92, 144, 163, 0.1)'}
+                        onMouseOut={(e) => e.target.style.backgroundColor = notification.isRead ? 'transparent' : 'rgba(92, 144, 163, 0.05)'}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            backgroundColor: notification.type === 'booking_accepted' ? 'rgba(76, 175, 80, 0.1)' :
+                                     notification.type === 'booking_rejected' ? 'rgba(244, 67, 54, 0.1)' :
+                                     'var(--accent-color-1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            <i className={`fas fa-${notification.icon || 'bell'}`} style={{ 
+                              color: notification.type === 'booking_accepted' ? 'var(--success-color)' :
+                                     notification.type === 'booking_rejected' ? 'var(--danger-color)' :
+                                     'var(--primary-color)'
+                            }}></i>
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ 
+                              margin: '0 0 5px 0', 
+                              fontSize: '0.9rem', 
+                              color: 'var(--text-dark)',
+                              fontWeight: !notification.isRead ? 'bold' : 'normal'
+                            }}>
+                              {notification.message}
+                            </p>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-light)' }}>
+                              {new Date(notification.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          {!notification.isRead && (
+                            <div style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: notification.type === 'booking_accepted' ? 'var(--success-color)' :
+                                              notification.type === 'booking_rejected' ? 'var(--danger-color)' :
+                                              'var(--accent-color-1)',
+                              marginTop: '6px'
+                            }}></div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-light)' }}>
+                      <i className="fas fa-bell-slash" style={{ fontSize: '2rem', marginBottom: '10px' }}></i>
+                      <p style={{ margin: 0 }}>No notifications yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
           {/* User info with dropdown */}
           <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
@@ -1842,13 +2080,13 @@ const PhotographerDashboard = () => {
                       justifyContent: 'center'
                     }}>
                       <i className="fas fa-camera" style={{ fontSize: '24px', color: 'white' }}></i>
-                    </div>
+              </div>
                     <div>
                       <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: '500' }}>Total Sessions</h6>
                       <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>{bookings.length}</h2>
                       <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', margin: '0' }}>All time bookings</p>
-                    </div>
-                  </div>
+            </div>
+          </div>
                 </div>
               </div>
             </div>
@@ -1882,15 +2120,15 @@ const PhotographerDashboard = () => {
                       justifyContent: 'center'
                     }}>
                       <i className="fas fa-check-circle" style={{ fontSize: '24px', color: 'white' }}></i>
-                    </div>
+              </div>
                     <div>
                       <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: '500' }}>Confirmed</h6>
                       <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
                         {bookings.filter(b => b.decision?.toLowerCase() === 'confirmed').length}
                       </h2>
                       <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', margin: '0' }}>Accepted bookings</p>
-                    </div>
-                  </div>
+            </div>
+          </div>
                 </div>
               </div>
             </div>
@@ -1924,15 +2162,15 @@ const PhotographerDashboard = () => {
                       justifyContent: 'center'
                     }}>
                       <i className="fas fa-star" style={{ fontSize: '24px', color: 'white' }}></i>
-                    </div>
+              </div>
                     <div>
                       <h6 className="mb-1" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.9rem', fontWeight: '500' }}>Interested In</h6>
                       <h2 className="mb-0" style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
                         {bookings.filter(b => b.decision?.toLowerCase() === 'likely').length}
                       </h2>
                       <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', margin: '0' }}>Shown interest</p>
-                    </div>
-                  </div>
+            </div>
+          </div>
                 </div>
               </div>
             </div>
