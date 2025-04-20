@@ -1,9 +1,10 @@
 // UserDashboard.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PhotographerPopup from './PhotographerPopup';
 import axios from 'axios';
 import QuotationDetails from '../components/QuotationDetails';
+import { toast } from 'react-toastify';
 
 const UserDashboard = () => {
     const [showPopup, setShowPopup] = useState(false);
@@ -16,9 +17,33 @@ const UserDashboard = () => {
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
-    const [alertMessage, setAlertMessage] = useState(null);
     const [selectedNotification, setSelectedNotification] = useState(null);
     const navigate = useNavigate();
+    
+    // Add ref for notification dropdown
+    const notificationRef = useRef(null);
+    const notificationBellRef = useRef(null);
+
+    // Add useEffect to handle outside clicks for notification dropdown
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (showNotifications && 
+                notificationRef.current && 
+                !notificationRef.current.contains(event.target) &&
+                notificationBellRef.current &&
+                !notificationBellRef.current.contains(event.target)) {
+                setShowNotifications(false);
+            }
+        }
+        
+        // Attach the event listener
+        document.addEventListener('mousedown', handleClickOutside);
+        
+        // Clean up the event listener
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showNotifications]);
 
     useEffect(() => {
         // Check if user is logged in
@@ -224,21 +249,13 @@ const UserDashboard = () => {
             
             if (!formData.pinCode) {
                 console.warn("Warning: Booking doesn't have a PIN code!");
-                setAlertMessage({
-                    type: 'warning',
-                    title: 'Missing PIN Code',
-                    message: 'Your booking does not have a PIN code. Photographers may not be able to find it.'
-                });
+                toast.warning('Your booking does not have a PIN code. Photographers may not be able to find it.');
                 return;
             }
             
             if (!formData.contactNumber || formData.contactNumber.length !== 10) {
                 console.warn("Warning: Invalid contact number!");
-                setAlertMessage({
-                    type: 'warning',
-                    title: 'Invalid Contact Number',
-                    message: 'Please provide a valid 10-digit contact number.'
-                });
+                toast.warning('Please provide a valid 10-digit contact number.');
                 return;
             }
             
@@ -276,11 +293,7 @@ const UserDashboard = () => {
                 }
                 
                 // Show success alert
-                setAlertMessage({
-                    type: 'success',
-                    title: 'Booking Created!',
-                    message: 'Your booking request has been submitted successfully. Photographers will be notified and can show their interest.'
-                });
+                toast.success('Your booking request has been submitted successfully. Photographers will be notified and can show their interest.');
                 
                 // For testing: Simulate a photographer showing interest after 5 seconds
                 setTimeout(async () => {
@@ -347,11 +360,7 @@ const UserDashboard = () => {
                         });
 
                         // Show notification alert
-                        setAlertMessage({
-                            type: 'info',
-                            title: 'New Interest!',
-                            message: `${testPhotographer.name} has shown interest in your booking with a quote of ₹${testPhotographer.expectedPrice}. Check notifications to accept or decline.`
-                        });
+                        toast.info(`${testPhotographer.name} has shown interest in your booking with a quote of ₹${testPhotographer.expectedPrice}. Check notifications to accept or decline.`);
 
                         // Refresh notifications and bookings
                         await Promise.all([
@@ -366,19 +375,11 @@ const UserDashboard = () => {
                 fetchData(); // Refresh bookings after new booking
             } else {
                 console.error("Unexpected response status:", response.status);
-                setAlertMessage({
-                    type: 'danger',
-                    title: 'Booking Failed',
-                    message: 'Failed to save booking. Please try again.'
-                });
+                toast.error('Failed to save booking. Please try again.');
             }
         } catch (error) {
             console.error('Error saving booking:', error.response?.data || error.message);
-            setAlertMessage({
-                type: 'danger',
-                title: 'Booking Failed',
-                message: 'Failed to save booking. Please try again.'
-            });
+            toast.error('Failed to save booking. Please try again.');
         } finally {
             setShowPopup(false);
         }
@@ -484,7 +485,7 @@ const UserDashboard = () => {
             }
         } catch (error) {
             console.error("Error toggling favorite:", error);
-            alert("Failed to update favorites. Please try again.");
+            toast.error("Failed to update favorites. Please try again.");
         }
     };
 
@@ -664,11 +665,7 @@ const UserDashboard = () => {
             }
         } catch (error) {
             console.error('Error handling notification click:', error);
-            setAlertMessage({
-                type: 'error',
-                title: 'Error',
-                message: 'Failed to process notification. Please try again.'
-            });
+            toast.error('Failed to process notification. Please try again.');
         }
     };
 
@@ -702,15 +699,11 @@ const UserDashboard = () => {
 
             // Only show alert for certain notification types
             if (notification.type === 'booking_accepted' || notification.type === 'booking_rejected') {
-                setAlertMessage({
-                    type: notification.type === 'booking_accepted' ? 'success' : 'danger',
-                    title: notification.type === 'booking_accepted' ? 'Booking Accepted' : 'Booking Declined',
-                    message: notification.message
-                });
+                toast.success(`${notification.type === 'booking_accepted' ? 'Booking Accepted' : 'Booking Declined'}`);
                 
                 // Auto-hide alert after 5 seconds
                 setTimeout(() => {
-                    setAlertMessage(null);
+                    toast.clearWaitingQueue();
                 }, 5000);
             }
         } catch (error) {
@@ -862,11 +855,7 @@ const UserDashboard = () => {
             }
 
             // Show success message
-            setAlertMessage({
-                type: 'success',
-                title: 'Booking Confirmed',
-                message: `You have accepted ${photographerName}'s quotation. They have been notified and will contact you soon.`
-            });
+            toast.success(`You have accepted ${photographerName}'s quotation. They have been notified and will contact you soon.`);
 
             // Close the quotation modal
             setSelectedNotification(null);
@@ -888,11 +877,7 @@ const UserDashboard = () => {
                 errorMessage += error.message;
             }
 
-            setAlertMessage({
-                type: 'danger',
-                title: 'Error',
-                message: errorMessage
-            });
+            toast.error(errorMessage);
         }
     };
 
@@ -927,11 +912,7 @@ const UserDashboard = () => {
             );
 
             if (showMessage) {
-                setAlertMessage({
-                    type: 'info',
-                    title: 'Photographer Declined',
-                    message: `You have declined ${photographerName}'s interest.`
-                });
+                toast.info(`You have declined ${photographerName}'s interest.`);
             }
 
             // Refresh notifications
@@ -939,11 +920,7 @@ const UserDashboard = () => {
         } catch (error) {
             console.error('Failed to decline photographer:', error);
             if (showMessage) {
-                setAlertMessage({
-                    type: 'danger',
-                    title: 'Error',
-                    message: 'Failed to decline photographer. Please try again.'
-                });
+                toast.error('Failed to decline photographer. Please try again.');
             }
         }
     };
@@ -1010,7 +987,8 @@ const UserDashboard = () => {
                     {/* Notifications Bell */}
                     <div style={{ position: 'relative', marginRight: '20px' }}>
                         <div 
-                    onClick={toggleNotifications}
+                            ref={notificationBellRef}
+                            onClick={toggleNotifications}
                             style={{ 
                                 cursor: 'pointer',
                                 padding: '8px',
@@ -1046,6 +1024,7 @@ const UserDashboard = () => {
                         {/* Notifications Dropdown */}
                         {showNotifications && (
                             <div 
+                                ref={notificationRef}
                                 style={{
                                     position: 'absolute',
                                     top: 'calc(100% + 10px)',
@@ -1310,10 +1289,10 @@ const UserDashboard = () => {
                 </div>
 
             {/* Notification Alert */}
-            {alertMessage && (
-                <div className={`alert alert-${alertMessage.type} alert-dismissible fade show m-3`} role="alert">
-                    <strong>{alertMessage.title}</strong> {alertMessage.message}
-                    <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={() => setAlertMessage(null)}>
+            {toast.isActive('booking-alert') && (
+                <div className={`alert alert-${toast.isActive('booking-alert') ? 'success' : 'danger'} alert-dismissible fade show m-3`} role="alert">
+                    <strong>{toast.isActive('booking-alert') ? 'Booking Confirmed' : 'Error'}</strong> {toast.isActive('booking-alert') ? 'Your booking has been confirmed!' : 'Failed to process the booking. Please try again.'}
+                    <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={() => toast.clearWaitingQueue()}>
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -1809,11 +1788,7 @@ const UserDashboard = () => {
                                                                                                 e.stopPropagation();
                                                                                                 if (!photographer.id || !photographer.name) {
                                                                                                     console.error('Missing photographer details:', photographer);
-                                                                                                    setAlertMessage({
-                                                                                                        type: 'danger',
-                                                                                                        title: 'Error',
-                                                                                                        message: 'Missing photographer details. Please refresh and try again.'
-                                                                                                    });
+                                                                                                    toast.error('Missing photographer details. Please refresh and try again.');
                                                                                                     return;
                                                                                                 }
                                                                                                 handleAcceptPhotographer(
@@ -1831,11 +1806,7 @@ const UserDashboard = () => {
                                                                                                 e.stopPropagation();
                                                                                                 if (!photographer.id || !photographer.name) {
                                                                                                     console.error('Missing photographer details:', photographer);
-                                                                                                    setAlertMessage({
-                                                                                                        type: 'danger',
-                                                                                                        title: 'Error',
-                                                                                                        message: 'Missing photographer details. Please refresh and try again.'
-                                                                                                    });
+                                                                                                    toast.error('Missing photographer details. Please refresh and try again.');
                                                                                                     return;
                                                                                                 }
                                                                                                 handleDeclinePhotographer(

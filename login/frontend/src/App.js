@@ -8,6 +8,8 @@ import PhotographerDashboard from './pages/PhotographerDashboard';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ThemeProvider from './components/ThemeProvider';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './styles/reset.css';
 import './styles/globalStyles.css';
 
@@ -138,6 +140,18 @@ const App = () => {
                         }
                     />
                 </Routes>
+                <ToastContainer
+                    position="top-right"
+                    autoClose={5000}
+                    hideProgressBar={false}
+                    newestOnTop
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                    theme="light"
+                />
             </Router>
         </ThemeProvider>
     );
