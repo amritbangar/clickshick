@@ -83,12 +83,12 @@ const PinCodePopup = ({ isOpen, onClose, onSubmit }) => {
             setError('Please enter a valid 6-digit PIN code');
             return;
         }
-
+        
         // Clear any previous errors
         setError('');
         
         // Submit the PIN code
-        onSubmit(pinCode);
+            onSubmit(pinCode);
     };
 
     const handlePinCodeSelect = (code) => {
@@ -167,26 +167,26 @@ const PinCodePopup = ({ isOpen, onClose, onSubmit }) => {
                         backgroundColor: 'rgba(220, 53, 69, 0.1)',
                         color: 'var(--error-color)',
                         padding: window.innerWidth <= 480 ? '8px 10px' : '10px',
-                        borderRadius: '5px',
+                                borderRadius: '5px',
                         marginBottom: window.innerWidth <= 480 ? '12px' : '15px',
                         fontSize: window.innerWidth <= 480 ? '0.85rem' : '0.9rem'
                     }}>
                         <i className="fas fa-exclamation-circle" style={{ marginRight: '8px' }}></i>
-                        {error}
-                    </div>
-                )}
-
+                                {error}
+                            </div>
+                        )}
+                        
                 <form onSubmit={handleSubmit}>
-                    <input
-                        type="text"
+                        <input 
+                            type="text" 
                         value={pinCode}
                         onChange={(e) => setPinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         placeholder="Enter 6-digit PIN code"
-                        style={{
-                            width: '100%',
+                            style={{
+                                width: '100%',
                             padding: window.innerWidth <= 480 ? '10px' : '12px',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '5px',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '5px',
                             marginBottom: window.innerWidth <= 480 ? '12px' : '15px',
                             fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem'
                         }}
@@ -195,9 +195,9 @@ const PinCodePopup = ({ isOpen, onClose, onSubmit }) => {
                         inputMode="numeric"
                         required
                     />
-
-                    <div style={{
-                        display: 'flex',
+                    
+                    <div style={{ 
+                        display: 'flex', 
                         justifyContent: 'space-between',
                         gap: window.innerWidth <= 480 ? '8px' : '10px',
                         flexDirection: window.innerWidth <= 480 ? 'column' : 'row'

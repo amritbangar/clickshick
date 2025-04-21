@@ -205,12 +205,12 @@ const PhotographerDashboard = () => {
     setLoading(true);
     
     try {
-      const photographerId = localStorage.getItem('userId');
+    const photographerId = localStorage.getItem('userId');
       if (!photographerId) {
         throw new Error('Photographer ID not found in localStorage');
       }
-
-      const response = await axios.get('http://localhost:8080/api/bookings', {
+      
+          const response = await axios.get('http://localhost:8080/api/bookings', {
         params: {
           type: 'all',
           pinCode: currentPinCode && !viewAllBookings ? currentPinCode : undefined
@@ -219,9 +219,9 @@ const PhotographerDashboard = () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
         }
-      });
-
-      if (response.data && Array.isArray(response.data)) {
+          });
+          
+          if (response.data && Array.isArray(response.data)) {
         let filteredBookings = response.data;
 
         if (currentPinCode && !viewAllBookings) {
@@ -326,7 +326,7 @@ const PhotographerDashboard = () => {
     setCurrentPinCode(pinCode);
     
     // When setting a new PIN code, automatically turn off "view all" mode
-    setViewAllBookings(false);
+      setViewAllBookings(false);
     
     // Refresh bookings with the new pin code
     addDebugLog('Refreshing bookings with new pin code...', 'info');
@@ -489,10 +489,10 @@ const PhotographerDashboard = () => {
                 } else if (notification.type === 'booking_update') {
                   message = `Booking ${booking?.photographyType || 'session'} has been updated`;
                 }
-              }
+            }
 
-              return {
-                ...notification,
+            return {
+              ...notification,
                 message: message + '. Click to view details.',
                 booking,
                 showActions: !notification.isRead
@@ -533,8 +533,8 @@ const PhotographerDashboard = () => {
       // Mark notification as read if it's unread
       if (!notification.isRead) {
         await markAsRead(notification._id);
-      }
-    } catch (error) {
+        }
+      } catch (error) {
       console.error('Error handling notification click:', error);
       toast.error('Failed to process notification. Please try again.');
     }
@@ -551,15 +551,15 @@ const PhotographerDashboard = () => {
         return;
       }
 
-      try {
-        await axios.put(`http://localhost:8080/api/notifications/${notificationId}`, 
-          { isRead: true },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
+    try {
+      await axios.put(`http://localhost:8080/api/notifications/${notificationId}`, 
+        { isRead: true },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
           }
-        );
+        }
+      );
       } catch (error) {
         console.warn('Failed to mark notification as read on server:', error);
       }
@@ -586,9 +586,9 @@ const PhotographerDashboard = () => {
         await axios.put(`http://localhost:8080/api/notifications/mark-all-read`, 
           { userId: photographerId },
           {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
           }
         );
       } catch (error) {
@@ -1109,13 +1109,13 @@ const PhotographerDashboard = () => {
     }
     
     // Cleanup function
-    return () => {
-      if (timerId) {
-        clearInterval(timerId);
-      }
-    };
+      return () => {
+        if (timerId) {
+          clearInterval(timerId);
+        }
+      };
   }, [autoRefreshEnabled, refreshInterval]); // Only re-run when these values change
-
+  
   // Update the toggle auto-refresh function
   const toggleAutoRefresh = () => {
     const newState = !autoRefreshEnabled;
@@ -1599,18 +1599,18 @@ const PhotographerDashboard = () => {
           gap: '20px',
           marginBottom: '50px'
         }}>
-          {bookings.map((booking, index) => (
-            <div key={booking._id || booking.id || index} style={{
-              backgroundColor: 'var(--accent-color-2)',
-              borderRadius: '8px',
-              padding: '20px',
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
-              borderLeft: `4px solid ${
-                booking.status === 'Confirmed' ? 'var(--success-color)' :
-                booking.status === 'Pending' ? 'var(--warning-color)' :
-                booking.status === 'Cancelled' ? 'var(--danger-color)' : 'var(--info-color)'
-              }`
-            }}>
+  {bookings.map((booking, index) => (
+    <div key={booking._id || booking.id || index} style={{
+      backgroundColor: 'var(--accent-color-2)',
+      borderRadius: '8px',
+      padding: '20px',
+      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
+      borderLeft: `4px solid ${
+        booking.status === 'Confirmed' ? 'var(--success-color)' :
+        booking.status === 'Pending' ? 'var(--warning-color)' :
+        booking.status === 'Cancelled' ? 'var(--danger-color)' : 'var(--info-color)'
+      }`
+    }}>
               {/* Existing booking card content */}
               <div style={{ marginBottom: '15px' }}>
                 <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem', color: 'var(--primary-color)' }}>
@@ -1622,12 +1622,12 @@ const PhotographerDashboard = () => {
                 <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: 'var(--text-light)' }}>
                   Area: {booking.pinCode || 'Not specified'}
                 </p>
-              </div>
-              
+        </div>
+      
               {/* Rest of the booking card content */}
               {/* ... existing booking details and actions ... */}
-            </div>
-          ))}
+    </div>
+  ))}
         </div>
       </>
     );
@@ -1693,21 +1693,21 @@ const PhotographerDashboard = () => {
             >
               <i className="fas fa-bell" style={{ fontSize: '1.4rem', color: '#fff' }}></i>
               {unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute',
+              <span style={{
+                position: 'absolute',
                   top: '0',
                   right: '0',
                   backgroundColor: 'red',
                   color: 'white',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.7rem',
-                  fontWeight: 'bold'
-                }}>
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.7rem',
+                fontWeight: 'bold'
+              }}>
                   {unreadCount}
                 </span>
               )}
@@ -1718,13 +1718,13 @@ const PhotographerDashboard = () => {
               <div 
                 ref={notificationRef}
                 style={{
-                  position: 'absolute',
+                position: 'absolute',
                   top: 'calc(100% + 10px)',
                   right: '-10px',
                   width: '350px',
-                  maxHeight: '500px',
+                maxHeight: '500px',
                   backgroundColor: '#fff',
-                  borderRadius: '8px',
+                borderRadius: '8px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   zIndex: 9999,
                   overflowY: 'auto',
@@ -1746,32 +1746,32 @@ const PhotographerDashboard = () => {
 
                 <div style={{ padding: '15px' }}>
                   <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
+                  display: 'flex',
+                  justifyContent: 'space-between',
                     alignItems: 'center', 
                     marginBottom: '12px' 
-                  }}>
+                }}>
                     <h6 style={{ margin: 0, color: '#333' }}>Notifications</h6>
                     {notifications.some(n => !n.isRead) && (
-                      <button 
+                    <button
                         onClick={(e) => {
                           e.stopPropagation();
                           markAllAsRead();
                         }}
-                        style={{ 
-                          background: 'none',
-                          border: 'none',
+                      style={{
+                        background: 'none',
+                        border: 'none',
                           color: '#666',
                           fontSize: '0.875rem',
-                          cursor: 'pointer',
+                        cursor: 'pointer',
                           padding: 0
-                        }}
-                      >
-                        Mark all as read
-                      </button>
-                    )}
-                  </div>
-
+                      }}
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+                
                   {notifications.length === 0 ? (
                     <div style={{ 
                       textAlign: 'center', 
@@ -1784,50 +1784,50 @@ const PhotographerDashboard = () => {
                   ) : (
                     <div>
                       {notifications.map((notification) => (
-                        <div 
-                          key={notification._id}
-                          style={{ 
+                      <div
+                        key={notification._id}
+                        style={{
                             padding: '12px',
                             marginBottom: '8px',
                             backgroundColor: notification.isRead ? '#fff' : '#f8f9fa',
                             borderRadius: '6px',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.2s'
-                          }}
+                          cursor: 'pointer',
+                          transition: 'background-color 0.2s'
+                        }}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleNotificationClick(notification);
                           }}
                         >
-                          <div style={{ 
-                            display: 'flex', 
+                          <div style={{
+                            display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'flex-start'
                           }}>
                             <div>
-                              <p style={{ 
+                            <p style={{ 
                                 margin: '0 0 4px',
                                 color: '#333',
                                 fontSize: '0.9rem'
-                              }}>
-                                {notification.message}
-                              </p>
+                            }}>
+                              {notification.message}
+                            </p>
                               <small style={{ color: '#666' }}>
-                                {new Date(notification.createdAt).toLocaleString()}
+                              {new Date(notification.createdAt).toLocaleString()}
                               </small>
-                            </div>
-                            {!notification.isRead && (
+                          </div>
+                          {!notification.isRead && (
                               <span style={{
-                                width: '8px',
-                                height: '8px',
-                                borderRadius: '50%',
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
                                 backgroundColor: '#0d6efd',
                                 display: 'inline-block',
                                 marginLeft: '8px'
                               }} />
-                            )}
-                          </div>
+                          )}
                         </div>
+                      </div>
                       ))}
                     </div>
                   )}
