@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import PinCodePopup from '../components/PinCodePopup';
@@ -6,6 +6,7 @@ import bookingsService from '../services/BookingsService';
 import BookingAnalytics from '../components/BookingAnalytics';
 import ShowInterestPopup from '../components/ShowInterestPopup';
 import '../styles/reset.css';
+import { toast } from 'react-toastify';
 
 const PhotographerDashboard = () => {
   const [bookings, setBookings] = useState([]);
@@ -40,6 +41,8 @@ const PhotographerDashboard = () => {
   });
   const [alertMessage, setAlertMessage] = useState(null);
   const navigate = useNavigate();
+  const notificationRef = useRef(null);
+  const notificationBellRef = useRef(null);
 
   // Add debug log function
   const addDebugLog = (message, type = 'info') => {
@@ -499,101 +502,96 @@ const PhotographerDashboard = () => {
     return () => clearInterval(notificationInterval);
   }, []); // Only run once on component mount
 
-  // Function to fetch photographer notifications
+  // Fetch notifications
   const fetchNotifications = async () => {
     try {
       const photographerId = localStorage.getItem('userId');
       if (!photographerId) return;
       
-      try {
-        const response = await axios.get(`http://localhost:8080/api/notifications?photographerId=${photographerId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          timeout: 3000
-        });
+      console.log("Fetching notifications for photographer:", photographerId);
+      
+      const response = await axios.get(`http://localhost:8080/api/photographers/notifications/${photographerId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      console.log("Raw notifications from server:", response.data);
+      
+      if (Array.isArray(response.data)) {
+        // First, get all bookings to ensure we have the latest data
+        await fetchBookings();
         
-        if (Array.isArray(response.data)) {
-          // Process notifications and format them
-          const formattedNotifications = response.data.map(notification => {
-            let formattedMessage = notification.message;
-            let notificationType = notification.type;
-            let icon = 'bell';
-
-            // Handle different notification types
-            switch (notification.type) {
-              case 'booking_accepted':
-                icon = 'check-circle';
-                formattedMessage = `${notification.userName || 'A user'} has accepted your quotation for ${notification.bookingType || 'photography session'}`;
-                break;
-              case 'booking_rejected':
-                icon = 'times-circle';
-                formattedMessage = `${notification.userName || 'A user'} has declined your quotation for ${notification.bookingType || 'photography session'}`;
-                break;
-              case 'new_booking':
-                icon = 'calendar-plus';
-                break;
-              case 'booking_cancelled':
-                icon = 'calendar-times';
-                break;
-              case 'new_review':
-                icon = 'star';
-                break;
-              default:
-                icon = 'bell';
+        // Format notifications to ensure they have all required data
+        const formattedNotifications = response.data.map(notification => {
+          console.log("Processing notification:", notification);
+          
+          if (notification.type === 'new_booking' || notification.type === 'booking_update') {
+            // Find the associated booking
+            const booking = bookings.find(b => b._id === notification.bookingId);
+            
+            let message = notification.message;
+            if (!message) {
+              if (notification.type === 'new_booking') {
+                message = `New booking request for ${booking?.photographyType || 'photography session'} in ${booking?.location || 'your area'}`;
+              } else if (notification.type === 'booking_update') {
+                message = `Booking ${booking?.photographyType || 'session'} has been updated`;
+              }
             }
-
+            
             return {
               ...notification,
-              message: formattedMessage,
-              type: notificationType,
-              icon: icon
+              message: message + '. Click to view details.',
+              booking,
+              showActions: !notification.isRead
             };
-          });
-
-          // Check if we have new notifications
-          const currentNotifCount = unreadCount;
-          const newUnreadCount = formattedNotifications.filter(notif => !notif.isRead).length;
-          
-          // Update notifications state
-          setNotifications(formattedNotifications);
-          setUnreadCount(newUnreadCount);
-          
-          // If there are new notifications, refresh bookings
-          if (newUnreadCount > currentNotifCount) {
-            fetchData();
           }
-
-          // Show notification alert for new unread notifications
-          const newUnreadNotification = formattedNotifications.find(n => !n.isRead);
-          if (newUnreadNotification && notification === null) {
-            setNotification({
-              type: newUnreadNotification.type === 'booking_accepted' ? 'success' : 
-                    newUnreadNotification.type === 'booking_rejected' ? 'warning' : 
-                    newUnreadNotification.type === 'new_booking' ? 'info' : 'info',
-              message: newUnreadNotification.message
-            });
-            
-            // Auto-hide notification after 5 seconds
-            setTimeout(() => {
-              setNotification(null);
-            }, 5000);
-          }
-        }
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Failed to fetch notifications from API:', error);
-        }
+          return notification;
+        });
+        
+        console.log("Formatted notifications:", formattedNotifications);
+        
+        setNotifications(formattedNotifications);
+        setUnreadCount(formattedNotifications.filter(notif => !notif.isRead).length);
       }
     } catch (error) {
-      console.error('Failed to process notifications:', error);
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  // Handle notification click
+  const handleNotificationClick = async (notification) => {
+    try {
+      console.log('Notification clicked:', notification);
+
+      if (notification.type === 'booking_interest') {
+        // Set the selected booking and show details modal
+        setSelectedBooking(notification.booking);
+        setShowDetailsModal(true);
+      }
+
+      // Mark notification as read if it's unread
+      if (!notification.isRead) {
+        await markAsRead(notification._id);
+      }
+    } catch (error) {
+      console.error('Error handling notification click:', error);
+      toast.error('Failed to process notification. Please try again.');
     }
   };
 
   // Mark notification as read
   const markAsRead = async (notificationId) => {
     try {
-      await axios.put(`http://localhost:8080/api/notifications/${notificationId}`, 
+      // Find the notification that was clicked
+      const notification = notifications.find(notif => notif._id === notificationId);
+      
+      if (!notification) {
+        console.warn('Notification not found:', notificationId);
+        return;
+      }
+
+      await axios.put(`http://localhost:8080/api/photographers/notifications/${notificationId}/read`, 
         { isRead: true },
         {
           headers: {
@@ -620,11 +618,14 @@ const PhotographerDashboard = () => {
       const photographerId = localStorage.getItem('userId');
       if (!photographerId) return;
       
-      await axios.put(`http://localhost:8080/api/notifications/read-all/${photographerId}`, {}, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+      await axios.put(`http://localhost:8080/api/photographers/notifications/read-all`, 
+        { photographerId },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         }
-      });
+      );
       
       // Update all notifications in state
       const updatedNotifications = notifications.map(notif => ({ ...notif, isRead: true }));
@@ -635,9 +636,34 @@ const PhotographerDashboard = () => {
     }
   };
 
+  // Fetch bookings
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const photographerId = localStorage.getItem('userId');
+      if (!photographerId) return;
+
+      const response = await axios.get(`http://localhost:8080/api/photographers/${photographerId}/bookings`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (Array.isArray(response.data)) {
+        setBookings(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch bookings:', error);
+      toast.error('Failed to fetch bookings. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial data loading
   useEffect(() => {
-    fetchPhotographerData();
-    fetchData();
+    fetchBookings();
+    fetchNotifications();
   }, []);
 
   const handleAcceptBooking = async (bookingId, userId) => {
@@ -1208,11 +1234,37 @@ const PhotographerDashboard = () => {
     addDebugLog(`Auto-refresh options ${!showAutoRefreshOptions ? 'shown' : 'hidden'}`, 'info');
   };
 
+  // Handle click outside notification dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if notifications are shown and the click is outside both the notification box and bell icon
+      if (
+        showNotifications && 
+        notificationRef.current && 
+        !notificationRef.current.contains(event.target) &&
+        notificationBellRef.current &&
+        !notificationBellRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+
+    // Add event listener when notifications are shown
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    // Cleanup function to remove event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]); // Only re-run effect when showNotifications changes
+
   // Toggle notification dropdown
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
     
-    // If we're opening the dropdown, make sure we have notifications to show
+    // If we're opening the dropdown, fetch new notifications
     if (!showNotifications) {
       fetchNotifications();
     }
@@ -1543,144 +1595,165 @@ const PhotographerDashboard = () => {
             <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`} style={{ fontSize: '1.2rem' }}></i>
           </div>
 
-          {/* Notifications icon */}
-          <div style={{ position: 'relative', marginRight: '20px', cursor: 'pointer' }} onClick={toggleNotifications}>
-            <i className="fas fa-bell" style={{ fontSize: '1.4rem' }}></i>
-              {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-8px',
-                right: '-8px',
-                backgroundColor: 'var(--accent-color-1)',
-                color: 'var(--primary-color)',
+          {/* Notifications bell */}
+          <div style={{ position: 'relative', marginRight: '20px' }}>
+            <div 
+              ref={notificationBellRef}
+              onClick={toggleNotifications}
+              style={{ 
+                cursor: 'pointer',
+                padding: '8px',
                 borderRadius: '50%',
-                width: '20px',
-                height: '20px',
+                backgroundColor: showNotifications ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.7rem',
-                fontWeight: 'bold'
-              }}>
+                justifyContent: 'center'
+              }}
+            >
+              <i className="fas fa-bell" style={{ fontSize: '1.4rem', color: '#fff' }}></i>
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '0',
+                  right: '0',
+                  backgroundColor: 'red',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.7rem',
+                  fontWeight: 'bold'
+                }}>
                   {unreadCount}
                 </span>
               )}
             </div>
 
-            {/* Notification Dropdown */}
+            {/* Notifications Dropdown */}
             {showNotifications && (
-              <div style={{
-                position: 'absolute',
-                top: '60px',
-                right: '20px',
-                width: '400px',
-                maxHeight: '500px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                zIndex: 1000,
-                overflow: 'hidden'
-              }}>
+              <div 
+                ref={notificationRef}
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 10px)',
+                  right: '-10px',
+                  width: '350px',
+                  maxHeight: '500px',
+                  backgroundColor: '#fff',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  zIndex: 9999,
+                  overflowY: 'auto',
+                  border: '1px solid rgba(0,0,0,0.1)'
+                }}
+              >
+                {/* Dropdown Arrow */}
                 <div style={{
-                  padding: '15px',
-                  borderBottom: '1px solid #E0E0E0',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary-color)' }}>Notifications</h3>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllAsRead}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--primary-color)',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        padding: '5px 10px',
-                        borderRadius: '4px',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(92, 144, 163, 0.1)'}
-                      onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-                    >
-                      Mark all as read
-                    </button>
-                  )}
-                </div>
-                
-                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                  {notifications.length > 0 ? (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification._id}
-                        style={{
-                          padding: '15px',
-                          borderBottom: '1px solid #E0E0E0',
-                          backgroundColor: notification.isRead ? 'transparent' : 'rgba(92, 144, 163, 0.05)',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.2s'
+                  position: 'absolute',
+                  top: '-6px',
+                  right: '20px',
+                  width: '12px',
+                  height: '12px',
+                  backgroundColor: '#fff',
+                  transform: 'rotate(45deg)',
+                  borderLeft: '1px solid rgba(0,0,0,0.1)',
+                  borderTop: '1px solid rgba(0,0,0,0.1)',
+                }} />
+
+                <div style={{ padding: '15px' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginBottom: '12px' 
+                  }}>
+                    <h6 style={{ margin: 0, color: '#333' }}>Notifications</h6>
+                    {notifications.some(n => !n.isRead) && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAllAsRead();
                         }}
-                        onClick={() => markAsRead(notification._id)}
-                        onMouseOver={(e) => e.target.style.backgroundColor = notification.isRead ? 'rgba(92, 144, 163, 0.05)' : 'rgba(92, 144, 163, 0.1)'}
-                        onMouseOut={(e) => e.target.style.backgroundColor = notification.isRead ? 'transparent' : 'rgba(92, 144, 163, 0.05)'}
+                        style={{ 
+                          background: 'none',
+                          border: 'none',
+                          color: '#666',
+                          fontSize: '0.875rem',
+                          cursor: 'pointer',
+                          padding: 0
+                        }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            backgroundColor: notification.type === 'booking_accepted' ? 'rgba(76, 175, 80, 0.1)' :
-                                     notification.type === 'booking_rejected' ? 'rgba(244, 67, 54, 0.1)' :
-                                     'var(--accent-color-1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            <i className={`fas fa-${notification.icon || 'bell'}`} style={{ 
-                              color: notification.type === 'booking_accepted' ? 'var(--success-color)' :
-                                     notification.type === 'booking_rejected' ? 'var(--danger-color)' :
-                                     'var(--primary-color)'
-                            }}></i>
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <p style={{ 
-                              margin: '0 0 5px 0', 
-                              fontSize: '0.9rem', 
-                              color: 'var(--text-dark)',
-                              fontWeight: !notification.isRead ? 'bold' : 'normal'
-                            }}>
-                              {notification.message}
-                            </p>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-light)' }}>
-                              {new Date(notification.createdAt).toLocaleString()}
-                            </p>
-                          </div>
-                          {!notification.isRead && (
-                            <div style={{
-                              width: '8px',
-                              height: '8px',
-                              borderRadius: '50%',
-                              backgroundColor: notification.type === 'booking_accepted' ? 'var(--success-color)' :
-                                              notification.type === 'booking_rejected' ? 'var(--danger-color)' :
-                                              'var(--accent-color-1)',
-                              marginTop: '6px'
-                            }}></div>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+
+                  {notifications.length === 0 ? (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '20px',
+                      color: '#666' 
+                    }}>
+                      <i className="fas fa-bell-slash mb-2" style={{ fontSize: '1.5rem' }}></i>
+                      <p style={{ margin: '10px 0 0' }}>No notifications</p>
+                    </div>
                   ) : (
-                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-light)' }}>
-                      <i className="fas fa-bell-slash" style={{ fontSize: '2rem', marginBottom: '10px' }}></i>
-                      <p style={{ margin: 0 }}>No notifications yet</p>
+                    <div>
+                      {notifications.map((notification) => (
+                        <div 
+                          key={notification._id}
+                          style={{ 
+                            padding: '12px',
+                            marginBottom: '8px',
+                            backgroundColor: notification.isRead ? '#fff' : '#f8f9fa',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNotificationClick(notification);
+                          }}
+                        >
+                          <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start'
+                          }}>
+                            <div>
+                              <p style={{ 
+                                margin: '0 0 4px',
+                                color: '#333',
+                                fontSize: '0.9rem'
+                              }}>
+                                {notification.message}
+                              </p>
+                              <small style={{ color: '#666' }}>
+                                {new Date(notification.createdAt).toLocaleString()}
+                              </small>
+                            </div>
+                            {!notification.isRead && (
+                              <span style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                backgroundColor: '#0d6efd',
+                                display: 'inline-block',
+                                marginLeft: '8px'
+                              }} />
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
             )}
+          </div>
 
           {/* User info with dropdown */}
           <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
