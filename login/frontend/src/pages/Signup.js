@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/reset.css';
+import PinCodePopup from '../components/PinCodePopup';
 
 const Signup = () => {
     // Add useEffect for custom scrollbar
@@ -49,6 +50,7 @@ const Signup = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [showPinCodePopup, setShowPinCodePopup] = useState(false);
     const navigate = useNavigate();
     
     // Check for existing session on component mount
@@ -148,72 +150,59 @@ const Signup = () => {
         }
     };
 
+    const handlePinCodeSubmit = (pin) => {
+        // Handle pin code submission
+        console.log('Pin code submitted:', pin);
+        setShowPinCodePopup(false);
+    };
+
     return (
-        <div className="signup-container" style={{ 
+        <div style={{
             minHeight: '100vh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color-1) 100%)',
-            padding: '20px',
-            position: 'relative'
+            padding: window.innerWidth < 768 ? '20px 15px' : '40px',
+            background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color-2) 100%)'
         }}>
-            {/* Fullscreen button */}
-            <div 
-                onClick={toggleFullscreen}
-                style={{
-                    position: 'absolute',
-                    top: '20px',
-                    right: '20px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    color: 'white',
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 100
-                }}
-                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-            >
-                <i className={`fas ${isFullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
-            </div>
-            
-            <div className="signup-card" style={{
-                width: '100%',
-                maxWidth: '500px',
-                maxHeight: '90vh', // Set max height to enable scrolling
-                backgroundColor: 'var(--accent-color-2)',
+            <div style={{
+                backgroundColor: '#fff',
                 borderRadius: '15px',
-                boxShadow: 'var(--shadow-lg)',
-                overflow: 'hidden',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                width: window.innerWidth < 768 ? '100%' : '600px',
+                maxWidth: '100%',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                position: 'relative',
+                maxHeight: window.innerWidth < 768 ? '100vh' : '90vh'
             }}>
-                <div className="signup-header" style={{
+                <div style={{
                     background: 'var(--primary-color)',
-                    color: 'var(--accent-color-2)',
-                    padding: '30px 25px',
-                    textAlign: 'center',
+                    color: '#fff',
+                    padding: window.innerWidth < 768 ? '15px 20px' : '25px 30px',
                     borderTopLeftRadius: '15px',
                     borderTopRightRadius: '15px'
                 }}>
-                    <h1 style={{ fontWeight: 'bold', margin: 0 }}>
+                    <h1 style={{ 
+                        fontWeight: 'bold', 
+                        margin: 0,
+                        fontSize: window.innerWidth < 768 ? '1.5rem' : '2rem' 
+                    }}>
                         <i className="fas fa-user-plus mr-2"></i>
                         Create Account
                     </h1>
-                    <p className="mt-2 mb-0">Join clickshick.com today</p>
+                    <p className="mt-2 mb-0" style={{
+                        fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem'
+                    }}>Join clickshick.com today</p>
                 </div>
 
                 <div className="signup-body scrollable" style={{ 
-                    padding: '30px 25px',
-                    overflowY: 'auto', // Enable vertical scrolling
-                    flex: 1, // Take remaining space
-                    maxHeight: 'calc(90vh - 100px)', // Subtract header height
-                    scrollbarWidth: 'thin', // For Firefox
-                    scrollbarColor: 'rgba(18, 22, 57, 0.4) rgba(0, 0, 0, 0.05)' // For Firefox
+                    padding: window.innerWidth < 768 ? '20px 15px' : '30px 25px',
+                    overflowY: 'auto',
+                    flex: 1,
+                    maxHeight: window.innerWidth < 768 ? 'calc(100vh - 80px)' : 'calc(90vh - 100px)',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(18, 22, 57, 0.4) rgba(0, 0, 0, 0.05)'
                 }}>
                     {error && (
                         <div style={{
@@ -245,10 +234,20 @@ const Signup = () => {
 
                     <form onSubmit={handleSubmit}>
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ 
+                                fontWeight: 'bold', 
+                                color: 'var(--primary-color)', 
+                                marginBottom: '8px', 
+                                display: 'block',
+                                fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem'
+                            }}>
                                 Full Name
                             </label>
-                            <div className="input-group" style={{ display: 'flex', width: '100%' }}>
+                            <div className="input-group" style={{ 
+                                display: 'flex', 
+                                width: '100%',
+                                flexDirection: window.innerWidth < 480 ? 'column' : 'row'
+                            }}>
                                 <div style={{ 
                                     background: 'rgba(0, 0, 0, 0.05)', 
                                     border: `1px solid var(--border-color)`, 
@@ -262,8 +261,8 @@ const Signup = () => {
                                 }}>
                                     <i className="fas fa-user" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
-                    <input
-                        type="text"
+                                <input
+                                    type="text"
                                     style={{ 
                                         padding: '12px 15px',
                                         border: `1px solid var(--border-color)`,
@@ -274,18 +273,28 @@ const Signup = () => {
                                         fontSize: '16px'
                                     }}
                                     placeholder="Enter your full name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                    />
-                </div>
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ 
+                                fontWeight: 'bold', 
+                                color: 'var(--primary-color)', 
+                                marginBottom: '8px', 
+                                display: 'block',
+                                fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem'
+                            }}>
                                 Email Address
                             </label>
-                            <div className="input-group" style={{ display: 'flex', width: '100%' }}>
+                            <div className="input-group" style={{ 
+                                display: 'flex', 
+                                width: '100%',
+                                flexDirection: window.innerWidth < 480 ? 'column' : 'row'
+                            }}>
                                 <div style={{ 
                                     background: 'rgba(0, 0, 0, 0.05)', 
                                     border: `1px solid var(--border-color)`, 
@@ -299,8 +308,8 @@ const Signup = () => {
                                 }}>
                                     <i className="fas fa-envelope" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
-                    <input
-                        type="email"
+                                <input
+                                    type="email"
                                     style={{ 
                                         padding: '12px 15px',
                                         border: `1px solid var(--border-color)`,
@@ -311,18 +320,28 @@ const Signup = () => {
                                         fontSize: '16px'
                                     }}
                                     placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                </div>
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ 
+                                fontWeight: 'bold', 
+                                color: 'var(--primary-color)', 
+                                marginBottom: '8px', 
+                                display: 'block',
+                                fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem'
+                            }}>
                                 Password
                             </label>
-                            <div className="input-group" style={{ display: 'flex', width: '100%' }}>
+                            <div className="input-group" style={{ 
+                                display: 'flex', 
+                                width: '100%',
+                                flexDirection: window.innerWidth < 480 ? 'column' : 'row'
+                            }}>
                                 <div style={{ 
                                     background: 'rgba(0, 0, 0, 0.05)', 
                                     border: `1px solid var(--border-color)`, 
@@ -336,8 +355,8 @@ const Signup = () => {
                                 }}>
                                     <i className="fas fa-lock" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
-                    <input
-                        type="password"
+                                <input
+                                    type="password"
                                     style={{ 
                                         padding: '12px 15px',
                                         border: `1px solid var(--border-color)`,
@@ -348,21 +367,31 @@ const Signup = () => {
                                         fontSize: '16px'
                                     }}
                                     placeholder="Create a password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
-                </div>
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
                             <small style={{ color: 'var(--text-light)', fontSize: '12px', marginTop: '5px', display: 'block' }}>
                                 Password must be at least 4 characters long
                             </small>
                         </div>
 
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ 
+                                fontWeight: 'bold', 
+                                color: 'var(--primary-color)', 
+                                marginBottom: '8px', 
+                                display: 'block',
+                                fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem'
+                            }}>
                                 Confirm Password
                             </label>
-                            <div className="input-group" style={{ display: 'flex', width: '100%' }}>
+                            <div className="input-group" style={{ 
+                                display: 'flex', 
+                                width: '100%',
+                                flexDirection: window.innerWidth < 480 ? 'column' : 'row'
+                            }}>
                                 <div style={{ 
                                     background: 'rgba(0, 0, 0, 0.05)', 
                                     border: `1px solid var(--border-color)`, 
@@ -396,19 +425,25 @@ const Signup = () => {
                         </div>
 
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ 
+                                fontWeight: 'bold', 
+                                color: 'var(--primary-color)', 
+                                marginBottom: '8px', 
+                                display: 'block',
+                                fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem'
+                            }}>
                                 Account Type
                             </label>
                             <div style={{ 
-                                display: 'flex', 
-                                gap: '20px'
+                                display: 'grid',
+                                gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr',
+                                gap: window.innerWidth < 768 ? '15px' : '20px'
                             }}>
                                 <label style={{ 
                                     display: 'flex', 
                                     alignItems: 'center', 
                                     cursor: 'pointer',
-                                    flexGrow: 1,
-                                    padding: '15px',
+                                    padding: window.innerWidth < 768 ? '12px' : '15px',
                                     border: `1px solid ${category === 'user' ? 'var(--accent-color-1)' : 'var(--border-color)'}`,
                                     borderRadius: '5px',
                                     backgroundColor: category === 'user' ? 'rgba(255, 165, 0, 0.1)' : 'transparent'
@@ -427,14 +462,13 @@ const Signup = () => {
                                             I want to hire photographers
                                         </p>
                                     </div>
-                                    </label>
+                                </label>
                                 
                                 <label style={{ 
                                     display: 'flex', 
                                     alignItems: 'center',
                                     cursor: 'pointer',
-                                    flexGrow: 1,
-                                    padding: '15px',
+                                    padding: window.innerWidth < 768 ? '12px' : '15px',
                                     border: `1px solid ${category === 'photographer' ? 'var(--accent-color-1)' : 'var(--border-color)'}`,
                                     borderRadius: '5px',
                                     backgroundColor: category === 'photographer' ? 'rgba(255, 165, 0, 0.1)' : 'transparent'
@@ -452,48 +486,75 @@ const Signup = () => {
                                         <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: 'var(--text-light)' }}>
                                             I want to offer my services
                                         </p>
-                        </div>
+                                    </div>
                                 </label>
                             </div>
                         </div>
 
                         <button 
                             type="submit" 
-                            className="btn-primary"
-                            style={{ 
+                            style={{
                                 width: '100%',
-                                padding: '12px',
+                                padding: window.innerWidth < 768 ? '12px' : '15px',
                                 backgroundColor: 'var(--accent-color-1)',
-                                color: 'var(--primary-color)',
+                                color: '#fff',
                                 border: 'none',
                                 borderRadius: '5px',
-                                fontSize: '16px',
+                                fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem',
                                 fontWeight: 'bold',
                                 cursor: 'pointer',
-                                marginBottom: '20px',
-                                transition: 'all 0.3s ease'
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'background-color 0.3s ease'
                             }}
                             disabled={isLoading}
-                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-color-2)'}
-                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-color-1)'}
                         >
-                            {isLoading ? 'Creating Account...' : 'Create Account'}
+                            {isLoading ? (
+                                <div className="spinner-border spinner-border-sm mr-2" role="status">
+                                    <span className="sr-only">Loading...</span>
+                                </div>
+                            ) : (
+                                <i className="fas fa-user-plus mr-2"></i>
+                            )}
+                            {isLoading ? 'Creating Account...' : 'Sign Up'}
                         </button>
 
-                        <div className="text-center" style={{ textAlign: 'center' }}>
-                            <p style={{ color: 'var(--text-light)' }}>
-                                Already have an account? 
-                                <Link to="/login" style={{ color: 'var(--accent-color-1)', fontWeight: 'bold', marginLeft: '5px', textDecoration: 'none' }}>
-                                    Sign in
-                                </Link>
-                            </p>
-                        </div>
+                        <p style={{ 
+                            textAlign: 'center', 
+                            marginTop: '20px',
+                            fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem'
+                        }}>
+                            Already have an account? <a href="/login" style={{ color: 'var(--accent-color-1)', textDecoration: 'none' }}>Sign In</a>
+                        </p>
                     </form>
-
-                    {/* Add extra space at the bottom to ensure scrolling */}
-                    <div style={{ height: '100px', marginTop: '20px' }}></div>
                 </div>
+
+                {/* Fullscreen toggle button */}
+                <button
+                    onClick={toggleFullscreen}
+                    style={{
+                        position: 'absolute',
+                        top: window.innerWidth < 768 ? '10px' : '15px',
+                        right: window.innerWidth < 768 ? '10px' : '15px',
+                        background: 'none',
+                        border: 'none',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem'
+                    }}
+                >
+                    <i className={`fas fa-${isFullscreen ? 'compress' : 'expand'}`}></i>
+                </button>
             </div>
+
+            {/* Pin Code Popup */}
+            {showPinCodePopup && (
+                <PinCodePopup
+                    onClose={() => setShowPinCodePopup(false)}
+                    onSubmit={handlePinCodeSubmit}
+                />
+            )}
         </div>
     );
 };

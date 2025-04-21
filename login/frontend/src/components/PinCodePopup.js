@@ -78,34 +78,17 @@ const PinCodePopup = ({ isOpen, onClose, onSubmit }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        // Basic validation
-        if (!pinCode || pinCode.length < 6) {
+        // Validate PIN code format (6 digits)
+        if (!/^\d{6}$/.test(pinCode)) {
             setError('Please enter a valid 6-digit PIN code');
             return;
         }
-        
-        // Log before submitting
-        console.log(`Submitting pin code: ${pinCode}`);
-        
-        // Check if the pin code is in our list
-        const matchedPinCode = popularPinCodes.find(p => p.code === pinCode);
-        if (matchedPinCode) {
-            console.log(`Pin code matched in our database: ${matchedPinCode.area}`);
-        } else {
-            console.log('Pin code not in our predefined list, but accepting it anyway');
-        }
-        
-        // Pass the pin code back to parent component
-        if (typeof onSubmit === 'function') {
-            onSubmit(pinCode);
-        } else {
-            console.error('onSubmit is not a function');
-        }
-        
-        // Clear state
+
+        // Clear any previous errors
         setError('');
-        setSearchTerm('');
-        // Note: Don't clear the pinCode as it will cause a visual flicker before the modal closes
+        
+        // Submit the PIN code
+        onSubmit(pinCode);
     };
 
     const handlePinCodeSelect = (code) => {
@@ -141,7 +124,7 @@ const PinCodePopup = ({ isOpen, onClose, onSubmit }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="pin-code-modal-overlay" style={{
+        <div className="popup-overlay" style={{
             position: 'fixed',
             top: 0,
             left: 0,
@@ -149,176 +132,109 @@ const PinCodePopup = ({ isOpen, onClose, onSubmit }) => {
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            alignItems: 'center',
+            zIndex: 1000
         }}>
-            <div className="pin-code-modal" style={{
+            <div className="popup-content" style={{
                 backgroundColor: 'white',
-                borderRadius: '10px',
-                width: '90%',
-                maxWidth: '450px',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-                overflow: 'hidden',
+                padding: window.innerWidth <= 480 ? '20px' : '30px',
+                borderRadius: window.innerWidth <= 480 ? '10px' : '15px',
+                maxWidth: window.innerWidth <= 480 ? '100%' : '400px',
+                width: window.innerWidth <= 480 ? 'calc(100% - 40px)' : '90%',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
             }}>
-                <div className="pin-code-header" style={{
-                    background: 'var(--primary-color)',
-                    color: 'var(--accent-color-2)',
-                    padding: '20px',
-                    textAlign: 'center',
+                <h2 style={{ 
+                    marginTop: 0, 
+                    marginBottom: window.innerWidth <= 480 ? '15px' : '20px',
+                    color: 'var(--primary-color)',
+                    fontSize: window.innerWidth <= 480 ? '1.3rem' : '1.5rem'
                 }}>
-                    <h3 style={{ margin: 0, fontWeight: 'bold' }}>Select Your PIN Code</h3>
-                    <p style={{ margin: '10px 0 0' }}>We'll show photographers available in your area</p>
-                </div>
+                    <i className="fas fa-map-marker-alt" style={{ marginRight: '10px' }}></i>
+                    Enter Your Area PIN Code
+                </h2>
                 
-                <form onSubmit={handleSubmit} style={{ padding: '20px' }}>
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ 
-                            display: 'block', 
-                            marginBottom: '8px', 
-                            fontWeight: 'bold',
-                            color: 'var(--primary-color)'
-                        }}>
-                            Enter PIN Code:
-                        </label>
-                        <input 
-                            type="text" 
-                            value={pinCode}
-                            onChange={(e) => {
-                                // Allow only numbers and limit to 6 digits
-                                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                                setPinCode(value);
-                                setError('');
-                            }}
-                            placeholder="Enter 6-digit PIN code"
-                            style={{
-                                width: '100%',
-                                padding: '12px 15px',
-                                fontSize: '16px',
-                                border: `1px solid ${error ? 'var(--error-color)' : 'var(--border-color)'}`,
-                                borderRadius: '5px',
-                                boxSizing: 'border-box'
-                            }}
-                        />
-                        {error && (
-                            <div style={{ color: 'var(--error-color)', fontSize: '14px', marginTop: '5px' }}>
-                                {error}
-                            </div>
-                        )}
-                        
-                        <div style={{ fontSize: '12px', marginTop: '5px', color: 'var(--text-light)' }}>
-                            <i className="fas fa-info-circle me-1"></i>
-                            Used to match you with photographers in your area
-                        </div>
+                <p style={{ 
+                    marginBottom: window.innerWidth <= 480 ? '15px' : '20px',
+                    color: 'var(--text-color)',
+                    fontSize: window.innerWidth <= 480 ? '0.85rem' : '0.9rem'
+                }}>
+                    This helps us show you relevant photography sessions in your area.
+                </p>
+
+                {error && (
+                    <div style={{
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        color: 'var(--error-color)',
+                        padding: window.innerWidth <= 480 ? '8px 10px' : '10px',
+                        borderRadius: '5px',
+                        marginBottom: window.innerWidth <= 480 ? '12px' : '15px',
+                        fontSize: window.innerWidth <= 480 ? '0.85rem' : '0.9rem'
+                    }}>
+                        <i className="fas fa-exclamation-circle" style={{ marginRight: '8px' }}></i>
+                        {error}
                     </div>
-                    
-                    <div style={{ marginBottom: '20px' }}>
-                        <p style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '10px' }}>
-                            Search Pin Codes:
-                        </p>
-                        <input 
-                            type="text" 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search by area or pin code"
-                            style={{
-                                width: '100%',
-                                padding: '10px 15px',
-                                fontSize: '14px',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: '5px',
-                                boxSizing: 'border-box',
-                                marginBottom: '10px'
-                            }}
-                        />
-                        
-                        <div style={{ 
-                            display: 'flex', 
-                            flexWrap: 'wrap', 
-                            gap: '10px',
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            padding: '5px'
-                        }}>
-                            {filteredPinCodes.map((item, index) => (
-                                <button
-                                    key={index}
-                                    type="button"
-                                    onClick={() => handlePinCodeSelect(item.code)}
-                                    style={{
-                                        backgroundColor: pinCode === item.code ? 'var(--primary-color)' : '#f0f0f0',
-                                        color: pinCode === item.code ? 'var(--accent-color-2)' : 'var(--text-dark)',
-                                        border: 'none',
-                                        padding: '8px 15px',
-                                        borderRadius: '20px',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        transition: 'all 0.2s',
-                                        fontWeight: pinCode === item.code ? 'bold' : 'normal',
-                                    }}
-                                >
-                                    {item.code} - {item.area}
-                                </button>
-                            ))}
-                            
-                            {filteredPinCodes.length === 0 && (
-                                <div style={{ padding: '10px', color: 'var(--text-light)', width: '100%', textAlign: 'center' }}>
-                                    No matching PIN codes found
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    
-                    <div style={{ 
-                        display: 'flex', 
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    <input
+                        type="text"
+                        value={pinCode}
+                        onChange={(e) => setPinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="Enter 6-digit PIN code"
+                        style={{
+                            width: '100%',
+                            padding: window.innerWidth <= 480 ? '10px' : '12px',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '5px',
+                            marginBottom: window.innerWidth <= 480 ? '12px' : '15px',
+                            fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem'
+                        }}
+                        maxLength={6}
+                        pattern="[0-9]*"
+                        inputMode="numeric"
+                        required
+                    />
+
+                    <div style={{
+                        display: 'flex',
                         justifyContent: 'space-between',
-                        marginTop: '20px' 
+                        gap: window.innerWidth <= 480 ? '8px' : '10px',
+                        flexDirection: window.innerWidth <= 480 ? 'column' : 'row'
                     }}>
                         <button
                             type="button"
                             onClick={handleSkip}
                             style={{
-                                backgroundColor: '#f8f9fa',
-                                color: 'var(--text-light)',
+                                padding: window.innerWidth <= 480 ? '8px 15px' : '10px 20px',
+                                backgroundColor: 'transparent',
                                 border: '1px solid var(--border-color)',
-                                padding: '10px 15px',
                                 borderRadius: '5px',
-                                fontSize: '14px',
-                                fontWeight: 'bold',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={e => {
-                                e.currentTarget.style.backgroundColor = '#e2e6ea';
-                            }}
-                            onMouseOut={e => {
-                                e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                flex: window.innerWidth <= 480 ? 'none' : 1,
+                                color: 'var(--text-color)',
+                                fontSize: window.innerWidth <= 480 ? '0.85rem' : '0.9rem',
+                                width: window.innerWidth <= 480 ? '100%' : 'auto'
                             }}
                         >
                             Skip for Now
                         </button>
-                        
                         <button
                             type="submit"
                             style={{
-                                backgroundColor: 'var(--primary-color)',
-                                color: 'var(--accent-color-2)',
+                                padding: window.innerWidth <= 480 ? '8px 15px' : '10px 20px',
+                                backgroundColor: 'var(--accent-color-1)',
+                                color: 'var(--primary-color)',
                                 border: 'none',
-                                padding: '10px 20px',
                                 borderRadius: '5px',
-                                fontSize: '14px',
-                                fontWeight: 'bold',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={e => {
-                                e.currentTarget.style.opacity = 0.9;
-                            }}
-                            onMouseOut={e => {
-                                e.currentTarget.style.opacity = 1;
+                                flex: window.innerWidth <= 480 ? 'none' : 1,
+                                fontWeight: 'bold',
+                                fontSize: window.innerWidth <= 480 ? '0.85rem' : '0.9rem',
+                                width: window.innerWidth <= 480 ? '100%' : 'auto'
                             }}
                         >
-                            Confirm PIN Code
+                            Submit
                         </button>
                     </div>
                 </form>

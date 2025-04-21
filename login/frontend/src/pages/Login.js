@@ -409,7 +409,7 @@ const Login = ({ setUserType }) => {
             alignItems: 'center',
             justifyContent: 'center',
             background: 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color-1) 100%)',
-            padding: '20px',
+            padding: window.innerWidth <= 480 ? '10px' : '20px',
             position: 'relative'
         }}>
             {/* Fullscreen button */}
@@ -417,12 +417,12 @@ const Login = ({ setUserType }) => {
                 onClick={toggleFullscreen}
                 style={{
                     position: 'absolute',
-                    top: '20px',
-                    right: '20px',
+                    top: window.innerWidth <= 480 ? '10px' : '20px',
+                    right: window.innerWidth <= 480 ? '10px' : '20px',
                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     color: 'white',
-                    width: '40px',
-                    height: '40px',
+                    width: window.innerWidth <= 480 ? '35px' : '40px',
+                    height: window.innerWidth <= 480 ? '35px' : '40px',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -437,10 +437,10 @@ const Login = ({ setUserType }) => {
 
             <div className="login-card" style={{
                 width: '100%',
-                maxWidth: '450px',
-                maxHeight: '80vh',
+                maxWidth: window.innerWidth <= 480 ? '100%' : '450px',
+                maxHeight: window.innerWidth <= 480 ? '100vh' : '80vh',
                 backgroundColor: 'var(--accent-color-2)',
-                borderRadius: '15px',
+                borderRadius: window.innerWidth <= 480 ? '0' : '15px',
                 boxShadow: 'var(--shadow-lg)',
                 overflow: 'hidden',
                 display: 'flex',
@@ -449,33 +449,44 @@ const Login = ({ setUserType }) => {
                 <div className="signup-header" style={{
                     background: 'var(--primary-color)',
                     color: 'var(--accent-color-2)',
-                    padding: '30px 25px',
+                    padding: window.innerWidth <= 480 ? '20px 15px' : '30px 25px',
                     textAlign: 'center',
-                    borderTopLeftRadius: '15px',
-                    borderTopRightRadius: '15px'
+                    borderTopLeftRadius: window.innerWidth <= 480 ? '0' : '15px',
+                    borderTopRightRadius: window.innerWidth <= 480 ? '0' : '15px'
                 }}>
-                    <h1 style={{ fontWeight: 'bold', margin: 0 }}>
+                    <h1 style={{ 
+                        fontWeight: 'bold', 
+                        margin: 0,
+                        fontSize: window.innerWidth <= 480 ? '1.5rem' : '2rem'
+                    }}>
                         <i className="fas fa-sign-in-alt mr-2"></i>
                         Sign In
                     </h1>
-                    <p className="mt-2 mb-0">Welcome back to clickshick.com</p>
+                    <p style={{ 
+                        marginTop: '0.5rem',
+                        marginBottom: 0,
+                        fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem'
+                    }}>
+                        Welcome back to clickshick.com
+                    </p>
                 </div>
 
                 <div className="login-body scrollable" style={{ 
-                    padding: '30px 25px',
+                    padding: window.innerWidth <= 480 ? '20px 15px' : '30px 25px',
                     overflowY: 'auto',
                     flex: 1,
-                    maxHeight: 'calc(80vh - 100px)'
+                    maxHeight: window.innerWidth <= 480 ? 'calc(100vh - 100px)' : 'calc(80vh - 100px)'
                 }}>
                     {error && (
                         <div style={{
                             backgroundColor: 'rgba(220, 53, 69, 0.1)',
                             color: 'var(--error-color)',
-                            padding: '12px 15px',
+                            padding: window.innerWidth <= 480 ? '10px' : '12px 15px',
                             borderRadius: '5px',
                             marginBottom: '20px',
                             display: 'flex',
-                            alignItems: 'center'
+                            alignItems: 'center',
+                            fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem'
                         }}>
                             <i className="fas fa-exclamation-circle mr-2"></i> {error}
                         </div>
@@ -483,7 +494,13 @@ const Login = ({ setUserType }) => {
 
                     <form onSubmit={handleSubmit}>
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ 
+                                fontWeight: 'bold', 
+                                color: 'var(--primary-color)', 
+                                marginBottom: '8px', 
+                                display: 'block',
+                                fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem'
+                            }}>
                                 Email Address
                             </label>
                             <div className="input-group" style={{ display: 'flex', width: '100%' }}>
@@ -495,21 +512,21 @@ const Login = ({ setUserType }) => {
                                     display: 'flex', 
                                     alignItems: 'center', 
                                     justifyContent: 'center',
-                                    width: '46px',
-                                    height: '46px'
+                                    width: window.innerWidth <= 480 ? '40px' : '46px',
+                                    height: window.innerWidth <= 480 ? '40px' : '46px'
                                 }}>
                                     <i className="fas fa-user" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
                                 <input
                                     type="email"
                                     style={{ 
-                                        padding: '12px 15px',
+                                        padding: window.innerWidth <= 480 ? '10px' : '12px 15px',
                                         border: `1px solid var(--border-color)`,
                                         borderLeft: 'none',
                                         borderRadius: '0 5px 5px 0',
                                         flex: '1',
-                                        height: '46px',
-                                        fontSize: '16px'
+                                        height: window.innerWidth <= 480 ? '40px' : '46px',
+                                        fontSize: window.innerWidth <= 480 ? '14px' : '16px'
                                     }}
                                     placeholder="Enter your email"
                                     value={email}
@@ -520,7 +537,13 @@ const Login = ({ setUserType }) => {
                         </div>
 
                         <div className="form-group mb-4">
-                            <label style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px', display: 'block' }}>
+                            <label style={{ 
+                                fontWeight: 'bold', 
+                                color: 'var(--primary-color)', 
+                                marginBottom: '8px', 
+                                display: 'block',
+                                fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem'
+                            }}>
                                 Password
                             </label>
                             <div className="input-group" style={{ display: 'flex', width: '100%' }}>
@@ -532,21 +555,21 @@ const Login = ({ setUserType }) => {
                                     display: 'flex', 
                                     alignItems: 'center', 
                                     justifyContent: 'center',
-                                    width: '46px',
-                                    height: '46px'
+                                    width: window.innerWidth <= 480 ? '40px' : '46px',
+                                    height: window.innerWidth <= 480 ? '40px' : '46px'
                                 }}>
                                     <i className="fas fa-lock" style={{ color: 'var(--primary-color)' }}></i>
                                 </div>
                                 <input
                                     type="password"
                                     style={{ 
-                                        padding: '12px 15px',
+                                        padding: window.innerWidth <= 480 ? '10px' : '12px 15px',
                                         border: `1px solid var(--border-color)`,
                                         borderLeft: 'none',
                                         borderRadius: '0 5px 5px 0',
                                         flex: '1',
-                                        height: '46px',
-                                        fontSize: '16px'
+                                        height: window.innerWidth <= 480 ? '40px' : '46px',
+                                        fontSize: window.innerWidth <= 480 ? '14px' : '16px'
                                     }}
                                     placeholder="Enter your password"
                                     value={password}
@@ -556,19 +579,27 @@ const Login = ({ setUserType }) => {
                             </div>
                         </div>
 
-                        <div className="form-group mb-4 d-flex justify-content-between align-items-center" style={{
+                        <div className="form-group mb-4" style={{
                             display: 'flex',
                             justifyContent: 'space-between',
-                            alignItems: 'center'
+                            alignItems: 'center',
+                            flexDirection: window.innerWidth <= 480 ? 'column' : 'row',
+                            gap: window.innerWidth <= 480 ? '10px' : '0'
                         }}>
                             <div className="custom-control custom-checkbox">
                                 <input type="checkbox" className="custom-control-input" id="rememberMe" />
                                 <label className="custom-control-label" htmlFor="rememberMe" style={{
                                     marginLeft: '5px',
-                                    color: 'var(--text-light)'
+                                    color: 'var(--text-light)',
+                                    fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem'
                                 }}>Remember me</label>
                             </div>
-                            <a href="#" style={{ color: 'var(--accent-color-1)', textDecoration: 'none', fontWeight: 'bold' }}>Forgot password?</a>
+                            <a href="#" style={{ 
+                                color: 'var(--accent-color-1)', 
+                                textDecoration: 'none', 
+                                fontWeight: 'bold',
+                                fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem'
+                            }}>Forgot password?</a>
                         </div>
 
                         <button 
@@ -576,12 +607,12 @@ const Login = ({ setUserType }) => {
                             className="btn-primary"
                             style={{
                                 width: '100%',
-                                padding: '12px',
+                                padding: window.innerWidth <= 480 ? '10px' : '12px',
                                 backgroundColor: 'var(--accent-color-1)',
                                 color: 'var(--primary-color)',
                                 border: 'none',
                                 borderRadius: '5px',
-                                fontSize: '16px',
+                                fontSize: window.innerWidth <= 480 ? '14px' : '16px',
                                 fontWeight: 'bold',
                                 cursor: 'pointer',
                                 marginBottom: '20px',
@@ -595,9 +626,19 @@ const Login = ({ setUserType }) => {
                         </button>
 
                         <div className="text-center" style={{ textAlign: 'center' }}>
-                            <p style={{ color: 'var(--text-light)' }}>
+                            <p style={{ 
+                                color: 'var(--text-light)',
+                                fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem',
+                                margin: window.innerWidth <= 480 ? '10px 0' : '15px 0'
+                            }}>
                                 Don't have an account? 
-                                <Link to="/signup" style={{ color: 'var(--accent-color-1)', fontWeight: 'bold', marginLeft: '5px', textDecoration: 'none' }}>
+                                <Link to="/signup" style={{ 
+                                    color: 'var(--accent-color-1)', 
+                                    fontWeight: 'bold', 
+                                    marginLeft: '5px', 
+                                    textDecoration: 'none',
+                                    fontSize: window.innerWidth <= 480 ? '0.9rem' : '1rem'
+                                }}>
                                     Sign up now
                                 </Link>
                             </p>
@@ -606,11 +647,11 @@ const Login = ({ setUserType }) => {
                 </div>
             </div>
             {showPinCodePopup && (
-            <PinCodePopup 
-                isOpen={showPinCodePopup}
-                onClose={handleSkipPinCode}
-                onSubmit={handlePinCodeSubmit}
-            />
+                <PinCodePopup 
+                    isOpen={showPinCodePopup}
+                    onClose={handleSkipPinCode}
+                    onSubmit={handlePinCodeSubmit}
+                />
             )}
         </div>
     );
