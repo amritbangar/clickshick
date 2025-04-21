@@ -200,107 +200,119 @@ const PhotographerDashboard = () => {
     }
   };
 
-  const fetchData = async () => {
-    addDebugLog('action', 'Fetching booking data...');
+  const fetchData = async (showNotification = false) => {
+    addDebugLog('action', 'Fetching bookings...');
     setLoading(true);
     
     try {
-    const photographerId = localStorage.getItem('userId');
+      const photographerId = localStorage.getItem('userId');
       if (!photographerId) {
         throw new Error('Photographer ID not found in localStorage');
       }
-      
-      let bookingsData = [];
-      
-      // First try to fetch all bookings that match this photographer's service area (pin code)
-      if (currentPinCode && !viewAllBookings) {
-        try {
-          addDebugLog('info', `Fetching bookings for pin code: ${currentPinCode}`);
-          const response = await axios.get(`http://localhost:8080/api/bookings?pinCode=${currentPinCode}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-            timeout: 5000
-          });
-          
-          if (response.data && Array.isArray(response.data)) {
-            // Only include bookings with matching PIN code
-            bookingsData = response.data.filter(booking => booking.pinCode === currentPinCode);
-            addDebugLog('success', `Found ${bookingsData.length} bookings for pin code ${currentPinCode}`);
-          }
-        } catch (pinCodeError) {
-          addDebugLog('error', `Failed to fetch bookings by pin code: ${pinCodeError.message}`);
+
+      const response = await axios.get('http://localhost:8080/api/bookings', {
+        params: {
+          type: 'all',
+          pinCode: currentPinCode && !viewAllBookings ? currentPinCode : undefined
+        },
+        headers: { 
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
-      } else {
-        // If no pin code specified or viewing all bookings, fetch all pending bookings
-        addDebugLog('info', 'Fetching all available bookings...');
-        
-        try {
-          const response = await axios.get('http://localhost:8080/api/bookings', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-            timeout: 5000
-          });
-          
-          if (response.data && Array.isArray(response.data)) {
-            bookingsData = response.data;
-            addDebugLog('success', `Total bookings retrieved: ${bookingsData.length}`);
-          }
-        } catch (allBookingsError) {
-          addDebugLog('error', `Failed to fetch all bookings: ${allBookingsError.message}`);
-        }
-      }
-      
-      // Also fetch bookings assigned specifically to this photographer
-      try {
-        const assignedResponse = await axios.get(`http://localhost:8080/api/bookings?photographerId=${photographerId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          timeout: 5000
-        });
-        
-        if (assignedResponse.data && Array.isArray(assignedResponse.data)) {
-          // Add bookings that weren't already added
-          const assignedBookings = assignedResponse.data.filter(booking => 
-            !bookingsData.some(existing => existing._id === booking._id)
+      });
+
+      if (response.data && Array.isArray(response.data)) {
+        let filteredBookings = response.data;
+
+        if (currentPinCode && !viewAllBookings) {
+          filteredBookings = response.data.filter(booking => 
+            booking.pinCode === currentPinCode
           );
-          
-          if (assignedBookings.length > 0) {
-            bookingsData = [...bookingsData, ...assignedBookings];
-            addDebugLog('info', `Added ${assignedBookings.length} bookings assigned to you`);
-          }
+          addDebugLog('info', `Filtered to ${filteredBookings.length} bookings matching PIN code ${currentPinCode}`);
         }
-      } catch (assignedError) {
-        addDebugLog('error', `Failed to fetch assigned bookings: ${assignedError.message}`);
-      }
-      
-      // Apply PIN code filter to all data if filter is active and not in "view all" mode
-      if (currentPinCode && !viewAllBookings) {
-        const filteredBookings = bookingsData.filter(booking => booking.pinCode === currentPinCode);
-        
-        if (filteredBookings.length < bookingsData.length) {
-          addDebugLog('info', `Filtered ${bookingsData.length} bookings down to ${filteredBookings.length} that match PIN code ${currentPinCode}`);
-          bookingsData = filteredBookings;
+
+        const sortedBookings = filteredBookings.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        setBookings(sortedBookings);
+        setLastRefreshTime(new Date());
+      } else {
+        setBookings([]);
+        if (showNotification) {
+          // Only show notification for no bookings found if explicitly requested
+          toast.warning(currentPinCode && !viewAllBookings 
+            ? `No bookings found in area ${currentPinCode}`
+            : 'No bookings found');
         }
       }
-      
-      // Sort bookings by date (newest first)
-      bookingsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      
-      // Update state with the bookings
-      setBookings(bookingsData);
-      setLastRefreshTime(new Date());
-      addDebugLog('success', `Successfully loaded ${bookingsData.length} bookings`);
       
     } catch (error) {
       console.error('Failed to fetch bookings:', error);
       addDebugLog('error', `Failed to fetch bookings: ${error.message}`);
-      
-      // Show error notification
-      setNotification({
-        type: 'error',
-        message: 'Failed to fetch bookings. Please try again.'
-      });
+      setBookings([]);
+      // Keep error notifications as they're important for user feedback
+      toast.error(error.response?.data?.message || 'Failed to fetch bookings. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  // Update the fetchBookings function to use the same endpoint
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const photographerId = localStorage.getItem('userId');
+      if (!photographerId) return;
+
+      const response = await axios.get('http://localhost:8080/api/bookings', {
+        params: {
+          type: 'all'
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (Array.isArray(response.data)) {
+        setBookings(response.data);
+        addDebugLog('success', `Fetched ${response.data.length} bookings`);
+      }
+    } catch (error) {
+      console.error('Failed to fetch bookings:', error);
+      addDebugLog('error', `Failed to fetch bookings: ${error.message}`);
+      toast.error('Failed to fetch bookings. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial data loading with error handling
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        await fetchData(true); // Show notification on initial load
+        await fetchNotifications();
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        addDebugLog('error', `Failed to load initial data: ${error.message}`);
+      }
+    };
+
+    loadInitialData();
+
+    // Set up polling for new data if needed
+    const dataInterval = setInterval(() => {
+      if (autoRefreshEnabled) {
+        fetchData(false); // Don't show notification on auto-refresh
+      }
+    }, refreshInterval);
+
+    // Cleanup
+    return () => {
+      clearInterval(dataInterval);
+    };
+  }, []);
 
   // Pin code functions
   const handlePinCodeChange = () => {
@@ -314,10 +326,7 @@ const PhotographerDashboard = () => {
     setCurrentPinCode(pinCode);
     
     // When setting a new PIN code, automatically turn off "view all" mode
-    if (viewAllBookings) {
-      setViewAllBookings(false);
-      addDebugLog('Disabled View All Bookings mode due to new PIN code filter', 'info');
-    }
+    setViewAllBookings(false);
     
     // Refresh bookings with the new pin code
     addDebugLog('Refreshing bookings with new pin code...', 'info');
@@ -325,17 +334,6 @@ const PhotographerDashboard = () => {
     
     // Close the popup
     setShowPinCodePopup(false);
-    
-    // Show a notification
-    setNotification({
-      type: 'success',
-      message: `Pin code updated to ${pinCode}. Showing bookings for this area only.`
-    });
-    
-    // Auto-hide notification after 5 seconds
-    setTimeout(() => {
-      setNotification(null);
-    }, 5000);
   };
   
   const handlePinCodeClear = () => {
@@ -364,7 +362,7 @@ const PhotographerDashboard = () => {
     }, 5000);
   };
 
-  // Update the force refresh function to maintain filter settings
+  // Update the force refresh function
   const handleForceRefresh = () => {
     console.log("Forcing bookings refresh...");
     addDebugLog('Force refresh requested by user', 'info');
@@ -375,23 +373,13 @@ const PhotographerDashboard = () => {
       viewAll: viewAllBookings
     });
     
-    // Show loading notification
-    setNotification({
-      type: 'info',
-      message: 'Refreshing bookings data...'
-    });
-    
-    // Fetch fresh data
-    fetchData();
+    // Fetch fresh data with notification
+    fetchData(true);
     
     // Update last refresh time
     const currentTime = new Date().toLocaleTimeString();
     setLastRefreshTime(currentTime);
     addDebugLog(`Updated last refresh time to ${currentTime}`, 'info');
-    
-    setTimeout(() => {
-      setNotification(null);
-    }, 3000);
   };
 
   // Toggle debug panel
@@ -448,50 +436,9 @@ const PhotographerDashboard = () => {
 
   // Add immediate mock notifications
   useEffect(() => {
-    // Initialize with mock notification data for development
-    const mockNotifications = [
-      {
-        _id: '1',
-        message: 'New booking request from Amit Kumar for Wedding Photography',
-        createdAt: new Date().toISOString(),
-        isRead: false,
-        type: 'new_booking'
-      },
-      {
-        _id: '2',
-        message: 'Booking #1078 has been cancelled by the user',
-        createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-        isRead: true,
-        type: 'booking_cancelled'
-      },
-      {
-        _id: '3',
-        message: 'User Priya Sharma has left a 5-star review for your work',
-        createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-        isRead: true,
-        type: 'new_review'
-      }
-    ];
-    
-    setNotifications(mockNotifications);
-    setUnreadCount(mockNotifications.filter(notif => !notif.isRead).length);
-    
-    // Show notification alert for any unread notification
-    if (notification === null) {
-      const unreadNotif = mockNotifications.find(n => !n.isRead);
-      if (unreadNotif) {
-        setNotification({
-          type: unreadNotif.type === 'new_booking' ? 'info' : 
-                unreadNotif.type === 'booking_cancelled' ? 'warning' : 'success',
-          message: unreadNotif.message
-        });
-        
-        // Auto-hide notification after 5 seconds
-        setTimeout(() => {
-          setNotification(null);
-        }, 5000);
-      }
-    }
+    // Initialize with empty notifications array
+    setNotifications([]);
+    setUnreadCount(0);
 
     // Setup polling for new notifications (after initial mock data is set)
     const notificationInterval = setInterval(() => {
@@ -543,7 +490,7 @@ const PhotographerDashboard = () => {
                   message = `Booking ${booking?.photographyType || 'session'} has been updated`;
                 }
               }
-              
+
               return {
                 ...notification,
                 message: message + '. Click to view details.',
@@ -560,31 +507,15 @@ const PhotographerDashboard = () => {
           setUnreadCount(formattedNotifications.filter(notif => !notif.isRead).length);
         }
       } catch (error) {
-        console.warn('Failed to fetch notifications from API, using mock data:', error);
-        
-        // Use mock data in development
-        const mockNotifications = [
-          {
-            _id: '1',
-            type: 'new_booking',
-            message: 'New booking request for Wedding Photography',
-            createdAt: new Date().toISOString(),
-            isRead: false
-          },
-          {
-            _id: '2',
-            type: 'booking_update',
-            message: 'A booking has been updated',
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            isRead: true
-          }
-        ];
-        
-        setNotifications(mockNotifications);
-        setUnreadCount(mockNotifications.filter(n => !n.isRead).length);
+        console.warn('Failed to fetch notifications from API:', error);
+        // Set empty notifications array on error
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
+      setNotifications([]);
+      setUnreadCount(0);
     }
   };
 
@@ -672,68 +603,6 @@ const PhotographerDashboard = () => {
       console.error('Failed to mark all notifications as read:', error);
     }
   };
-
-  // Fetch bookings
-  const fetchBookings = async () => {
-    try {
-      setLoading(true);
-      const photographerId = localStorage.getItem('userId');
-      if (!photographerId) return;
-
-      try {
-        const response = await axios.get(`http://localhost:8080/api/bookings`, {
-          params: {
-            photographerId,
-            type: 'photographer'
-          },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (Array.isArray(response.data)) {
-          setBookings(response.data);
-        }
-      } catch (error) {
-        console.warn('Failed to fetch bookings from API, using mock data:', error);
-        
-        // Use mock data in development
-        const mockBookings = [
-          {
-            _id: '1',
-            photographyType: 'Wedding Photography',
-            location: 'New Delhi',
-            date: new Date().toISOString(),
-            status: 'Pending',
-            userName: 'Test User',
-            budgetRange: '₹20,000 - ₹30,000'
-          },
-          {
-            _id: '2',
-            photographyType: 'Portrait Session',
-            location: 'Mumbai',
-            date: new Date(Date.now() + 86400000).toISOString(),
-            status: 'Confirmed',
-            userName: 'Another User',
-            budgetRange: '₹5,000 - ₹10,000'
-          }
-        ];
-        
-        setBookings(mockBookings);
-      }
-    } catch (error) {
-      console.error('Failed to fetch bookings:', error);
-      toast.error('Failed to fetch bookings. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial data loading
-  useEffect(() => {
-    fetchBookings();
-    fetchNotifications();
-  }, []);
 
   const handleAcceptBooking = async (bookingId, userId) => {
     try {
@@ -1191,7 +1060,7 @@ const PhotographerDashboard = () => {
     const newValue = !viewAllBookings;
     setViewAllBookings(newValue);
     
-    addDebugLog(`${newValue ? 'Activated' : 'Deactivated'} View All Bookings mode`, 'info');
+    addDebugLog(`${newValue ? 'Showing all bookings' : 'Showing filtered bookings'}`, 'info');
     
     // Refresh bookings with the updated filter setting
     fetchData();
@@ -1200,8 +1069,10 @@ const PhotographerDashboard = () => {
     setNotification({
       type: 'info',
       message: newValue 
-        ? 'Now showing bookings from all areas' 
-        : `Filtered to PIN code: ${currentPinCode}`
+        ? 'Now showing all available bookings' 
+        : currentPinCode 
+          ? `Showing bookings for PIN code: ${currentPinCode}` 
+          : 'Showing all bookings'
     });
     
     setTimeout(() => {
@@ -1209,44 +1080,58 @@ const PhotographerDashboard = () => {
     }, 3000);
   };
 
-  // Auto-refresh functionality
+  // Update the auto-refresh useEffect
   useEffect(() => {
-    // Clear any existing interval when the effect runs
-    if (refreshTimerId) {
-      clearInterval(refreshTimerId);
-    }
+    let timerId = null;
     
-    // Set up auto-refresh if enabled
     if (autoRefreshEnabled) {
-      addDebugLog(`Auto-refresh enabled - Will refresh every ${refreshInterval/1000} seconds`, 'info');
-      const timerId = setInterval(() => {
+      addDebugLog(`Starting auto-refresh every ${refreshInterval/1000} seconds`, 'info');
+      
+      // Initial fetch when auto-refresh is enabled
+      fetchData();
+      
+      // Set up the interval
+      timerId = setInterval(() => {
         addDebugLog('Auto-refresh triggered', 'info');
         fetchData();
-        // Update last refresh time
-        const currentTime = new Date().toLocaleTimeString();
-        setLastRefreshTime(currentTime);
+        setLastRefreshTime(new Date());
       }, refreshInterval);
       
+      // Save the timer ID
       setRefreshTimerId(timerId);
-      
-      // Cleanup function to clear interval when component unmounts or effect re-runs
-      return () => {
-        if (timerId) {
-          clearInterval(timerId);
-        }
-      };
+    } else {
+      // Clear the interval if auto-refresh is disabled
+      if (refreshTimerId) {
+        addDebugLog('Stopping auto-refresh', 'info');
+        clearInterval(refreshTimerId);
+        setRefreshTimerId(null);
+      }
     }
-  }, [autoRefreshEnabled, refreshInterval]);
-  
-  // Toggle auto-refresh
-  const toggleAutoRefresh = () => {
-    setAutoRefreshEnabled(!autoRefreshEnabled);
-    addDebugLog(`Auto-refresh ${!autoRefreshEnabled ? 'enabled' : 'disabled'}`, 'info');
     
-    // Show notification
+    // Cleanup function
+    return () => {
+      if (timerId) {
+        clearInterval(timerId);
+      }
+    };
+  }, [autoRefreshEnabled, refreshInterval]); // Only re-run when these values change
+
+  // Update the toggle auto-refresh function
+  const toggleAutoRefresh = () => {
+    const newState = !autoRefreshEnabled;
+    setAutoRefreshEnabled(newState);
+    
+    // Clear existing timer if disabling
+    if (!newState && refreshTimerId) {
+      clearInterval(refreshTimerId);
+      setRefreshTimerId(null);
+    }
+    
+    addDebugLog(`Auto-refresh ${newState ? 'enabled' : 'disabled'}`, 'info');
+    
     setNotification({
       type: 'info',
-      message: `Auto-refresh ${!autoRefreshEnabled ? 'enabled' : 'disabled'}`
+      message: `Auto-refresh ${newState ? 'enabled' : 'disabled'}`
     });
     
     // Auto-hide notification after 3 seconds
@@ -1255,18 +1140,30 @@ const PhotographerDashboard = () => {
     }, 3000);
   };
   
-  // Update refresh interval
+  // Update the refresh interval change handler
   const handleRefreshIntervalChange = (e) => {
     const newInterval = parseInt(e.target.value);
     setRefreshInterval(newInterval);
+    
+    // Clear existing timer
+    if (refreshTimerId) {
+      clearInterval(refreshTimerId);
+      setRefreshTimerId(null);
+    }
+    
+    // If auto-refresh is enabled, it will be restarted by the useEffect
     addDebugLog(`Auto-refresh interval updated to ${newInterval/1000} seconds`, 'info');
     
-    // Restart interval with new value if auto-refresh is enabled
-    if (autoRefreshEnabled) {
-      // This will trigger the useEffect to restart the interval
-      setAutoRefreshEnabled(false);
-      setTimeout(() => setAutoRefreshEnabled(true), 100);
-    }
+    // Show notification
+    setNotification({
+      type: 'info',
+      message: `Auto-refresh interval set to ${newInterval/1000} seconds`
+    });
+    
+    // Auto-hide notification after 3 seconds
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000);
   };
 
   // Function to toggle showing all bookings
@@ -1589,39 +1486,154 @@ const PhotographerDashboard = () => {
   };
 
   // Update the booking card JSX
-  {bookings.map((booking, index) => (
-    <div key={booking._id || booking.id || index} style={{
-      backgroundColor: 'var(--accent-color-2)',
-      borderRadius: '8px',
-      padding: '20px',
-      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
-      borderLeft: `4px solid ${
-        booking.status === 'Confirmed' ? 'var(--success-color)' :
-        booking.status === 'Pending' ? 'var(--warning-color)' :
-        booking.status === 'Cancelled' ? 'var(--danger-color)' : 'var(--info-color)'
-      }`
-    }}>
-      {/* ... existing booking card content ... */}
-      
-      <div style={{ marginTop: '15px' }}>
-        {renderBookingActions(booking)}
+  const renderBookings = () => {
+    if (loading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p style={{ marginTop: '15px', color: 'var(--text-light)' }}>
+            {currentPinCode && !viewAllBookings 
+              ? `Loading bookings for area ${currentPinCode}...`
+              : 'Loading all bookings...'}
+          </p>
         </div>
-      
-      {booking.interestedPhotographers && booking.interestedPhotographers.length > 0 && (
-        <div style={{ 
-          marginTop: '15px', 
-          padding: '10px', 
-          backgroundColor: 'rgba(92, 144, 163, 0.1)', 
-          borderRadius: '4px',
-          fontSize: '0.85rem'
-        }}>
-          <i className="fas fa-users" style={{ marginRight: '5px', color: '#5C90A3' }}></i>
-          {booking.interestedPhotographers.length} photographer(s) interested
-        </div>
-      )}
-    </div>
-  ))}
+      );
+    }
 
+    if (bookings.length === 0) {
+      return (
+        <div style={{
+          backgroundColor: 'var(--accent-color-2)',
+          borderRadius: '8px',
+          padding: '30px',
+          textAlign: 'center',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)'
+        }}>
+          <i className="fas fa-calendar-times" style={{ fontSize: '3rem', color: 'var(--primary-color)', marginBottom: '15px', opacity: 0.6 }}></i>
+          <h3 style={{ color: 'var(--primary-color)', marginBottom: '10px' }}>No Bookings Found</h3>
+          <p style={{ color: 'var(--text-light)', marginBottom: '20px' }}>
+            {currentPinCode && !viewAllBookings 
+              ? `No bookings found in area ${currentPinCode}.`
+              : 'There are currently no bookings available.'}
+          </p>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button 
+              onClick={fetchData}
+              style={{ 
+                backgroundColor: 'var(--primary-color)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '10px 20px',
+                fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              <i className="fas fa-sync-alt me-2"></i>
+              Refresh
+            </button>
+            {currentPinCode && !viewAllBookings && (
+              <button 
+                onClick={() => setViewAllBookings(true)}
+                style={{ 
+                  backgroundColor: 'transparent',
+                  color: 'var(--primary-color)',
+                  border: '1px solid var(--primary-color)',
+                  borderRadius: '4px',
+                  padding: '10px 20px',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <i className="fas fa-globe me-2"></i>
+                View All Areas
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {/* Filter Status Banner */}
+        {currentPinCode && !viewAllBookings && (
+          <div style={{
+            backgroundColor: 'rgba(92, 144, 163, 0.1)',
+            borderRadius: '8px',
+            padding: '15px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div>
+              <i className="fas fa-filter me-2"></i>
+              <span>Showing bookings for area: <strong>{currentPinCode}</strong></span>
+              <span className="ms-2">({bookings.length} booking{bookings.length !== 1 ? 's' : ''})</span>
+            </div>
+            <button
+              onClick={() => setViewAllBookings(true)}
+              style={{
+                backgroundColor: 'transparent',
+                color: 'var(--primary-color)',
+                border: '1px solid var(--primary-color)',
+                borderRadius: '4px',
+                padding: '8px 15px',
+                fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              <i className="fas fa-globe me-2"></i>
+              View All Areas
+            </button>
+          </div>
+        )}
+
+        {/* Bookings Grid */}
+        <div className="grid-container" style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: '20px',
+          marginBottom: '50px'
+        }}>
+          {bookings.map((booking, index) => (
+            <div key={booking._id || booking.id || index} style={{
+              backgroundColor: 'var(--accent-color-2)',
+              borderRadius: '8px',
+              padding: '20px',
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
+              borderLeft: `4px solid ${
+                booking.status === 'Confirmed' ? 'var(--success-color)' :
+                booking.status === 'Pending' ? 'var(--warning-color)' :
+                booking.status === 'Cancelled' ? 'var(--danger-color)' : 'var(--info-color)'
+              }`
+            }}>
+              {/* Existing booking card content */}
+              <div style={{ marginBottom: '15px' }}>
+                <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem', color: 'var(--primary-color)' }}>
+                  {booking.photographyType || 'Photography Session'}
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-light)' }}>
+                  Client: {booking.userName || booking.userEmail || 'Anonymous'}
+                </p>
+                <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: 'var(--text-light)' }}>
+                  Area: {booking.pinCode || 'Not specified'}
+                </p>
+              </div>
+              
+              {/* Rest of the booking card content */}
+              {/* ... existing booking details and actions ... */}
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  };
+
+  // Update the main content section to use the new rendering function
   return (
     <div className="dashboard-container" style={{ 
       height: '100vh',
@@ -2164,6 +2176,7 @@ const PhotographerDashboard = () => {
                         style={{ maxWidth: '200px' }}
                         value={refreshInterval}
                         onChange={handleRefreshIntervalChange}
+                        disabled={autoRefreshEnabled} // Disable changing interval while auto-refresh is running
                       >
                         <option value="30000">Auto-refresh: 30 seconds</option>
                         <option value="60000">Auto-refresh: 1 minute</option>
